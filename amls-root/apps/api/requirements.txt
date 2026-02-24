@@ -4,3 +4,5 @@ qdrant-client
 crewai
 sentence-transformers
 tavily-python
+langchain-google-genai
+python-dotenv
