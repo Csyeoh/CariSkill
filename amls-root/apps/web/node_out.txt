@@ -1,0 +1,12 @@
+RAW RESPONSE:
+[
+  { "text": "CI/CD", "size": "lg" },
+  { "text": "Docker", "size": "lg" },
+  { "text": "Unit Testing", "size": "lg" },
+  { "text": "Cloud Platforms", "size": "md" },
+  { "text": "GraphQL", "size": "md" },
+  { "text": "API Security", "size": "md" }
+]
+
+PARSED:
+[{"text":"CI/CD","size":"lg"},{"text":"Docker","size":"lg"},{"text":"Unit Testing","size":"lg"},{"text":"Cloud Platforms","size":"md"},{"text":"GraphQL","size":"md"},{"text":"API Security","size":"md"}]
