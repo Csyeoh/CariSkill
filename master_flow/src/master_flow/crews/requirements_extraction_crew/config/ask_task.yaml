@@ -1,0 +1,10 @@
+ask_task:
+  description: >
+    We are building a personalized learning roadmap for a student, but we are missing 
+    this critical piece of information: '{missing_field}'.
+    
+    Write a short, friendly, and conversational question to ask the user for this 
+    specific information. Do not ask about anything else.
+  expected_output: >
+    A single conversational question.
+  agent: interviewer

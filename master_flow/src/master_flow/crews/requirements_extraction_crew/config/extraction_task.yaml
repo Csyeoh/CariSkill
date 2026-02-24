@@ -1,0 +1,11 @@
+extract_task:
+  description: >
+    Analyze the user's latest message and extract any new learning requirements.
+    
+    Current known data: {current_data}
+    User message: "{user_message}"
+    
+    Update the known data with any new information found in the user message.
+  expected_output: >
+    A structured object containing the 5 requirement fields.
+  agent: extractor
