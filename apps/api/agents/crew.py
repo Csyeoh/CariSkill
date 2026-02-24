@@ -2,10 +2,10 @@ import os
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
-from tools.search_tools import search_syllabi, format_roadmap_json, validate_prerequisites, web_syllabus_search
+from tools.search_tools import search_syllabi, format_roadmap_json, validate_prerequisites, web_syllabus_search, find_resource_links
 
 # 1. Force Python to load the GEMINI_API_KEY from your .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # 2. Define the Gemini LLM explicitly
 gemini_llm = ChatGoogleGenerativeAI(
@@ -50,6 +50,17 @@ def generate_roadmap(skill: str):
         allow_delegation=False
     )
 
+    # Agent 4: Content Fetcher (Disabled per user request)
+    # content_fetcher = Agent(
+    #     role='Resource Curator',
+    #     goal='Find high-quality, free tutorials or articles for specific learning steps.',
+    #     backstory='You take a validated JSON roadmap and enrich it...',
+    #     tools=[find_resource_links],
+    #     llm=gemini_llm,
+    #     verbose=True,
+    #     allow_delegation=False
+    # )
+
     # Define Tasks
     research_task = Task(
         description=f'First, use the "Qdrant Syllabus Search" tool to search the local vector database for {skill}. ONLY IF it returns "ERROR_NOT_FOUND", use the "Web Syllabus Search" tool to search the web for a standard curriculum structure for {skill}. Extract key topics, learning outcomes, and carefully retain any source URLs provided by the search tool.',
@@ -69,13 +80,19 @@ def generate_roadmap(skill: str):
         agent=critic
     )
 
+    # content_gathering_task = Task(
+    #     description='Take the validated JSON learning roadmap from the Critic. Iterate through...',
+    #     expected_output='...',
+    #     agent=content_fetcher
+    # )
+
     # Form the Crew
     amls_crew = Crew(
         agents=[researcher, designer, critic],
         tasks=[research_task, design_task, qa_task],
         process=Process.sequential,
         verbose=True,
-        max_rpm=10
+        max_rpm=15
     )
 
     # Kickoff the process

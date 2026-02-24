@@ -43,6 +43,33 @@ def web_syllabus_search(skill: str) -> str:
     except Exception as e:
         return f"Error retrieving web results for {skill_query}: {e}"
 
+@tool("Find Resource Links")
+def find_resource_links(topic: str) -> str:
+    """Searches the web for high-quality, free tutorials, interactive courses, or guides for a highly specific learning topic (e.g., 'Python Variables tutorial')."""
+    topic_query = topic.get("topic", topic) if isinstance(topic, dict) else topic
+    
+    tavily_key = os.getenv("TAVILY_API_KEY")
+    if not tavily_key:
+        return "ERROR: TAVILY_API_KEY is not set."
+        
+    try:
+        tavily = TavilyClient(api_key=tavily_key)
+        response = tavily.search(query=f"Best free online tutorial, guide, or interactive course for {topic_query} 2026", search_depth="basic", max_results=3)
+        
+        if not response or not response.get("results"):
+            return f"No related tutorials found for {topic_query}."
+            
+        formatted_results = [f"Found the following top resources for {topic_query}:"]
+        
+        for result in response["results"]:
+            title = result.get("title", "Unknown Title")
+            url = result.get("url", "")
+            formatted_results.append(f"- {title}: {url}")
+            
+        return "\n".join(formatted_results)
+    except Exception as e:
+        return f"Error retrieving resources for {topic_query}: {e}"
+
 @tool("Qdrant Syllabus Search")
 def search_syllabi(query: str) -> str:
     """Searches the Qdrant database for top course syllabi matching the skill query."""
