@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -17,6 +17,7 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
   const [userEmail, setUserEmail] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
@@ -70,21 +71,25 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
         </div>
 
         {/* Navigation Links */}
-        <div className="hidden md:flex space-x-8 font-medium text-gray-600 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden md:flex space-x-8 font-medium absolute left-1/2 -translate-x-1/2">
           {[
             { name: 'My Progress', path: '/progress' },
             { name: 'Explore', path: '/explore' },
+            { name: 'Chat', path: '/chat' },
             { name: 'Bookmark', path: '/bookmark' },
-          ].map((link) => (
-            <Link
-              key={link.name}
-              href={isLoggedIn ? link.path : "/login"}
-              className="relative group py-1"
-            >
-              <span className="group-hover:text-gray-900 transition-colors duration-300">{link.name}</span>
-              <span className="absolute left-0 bottom-0 w-full h-[2px] bg-yellow-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
-            </Link>
-          ))}
+          ].map((link) => {
+            const isActive = pathname === link.path;
+            return (
+              <Link
+                key={link.name}
+                href={isLoggedIn ? link.path : "/login"}
+                className={`relative group py-1 ${isActive ? "text-yellow-500" : "text-gray-600"}`}
+              >
+                <span className={`transition-colors duration-300 ${isActive ? "" : "group-hover:text-gray-900"}`}>{link.name}</span>
+                <span className={`absolute left-0 bottom-0 w-full h-[2px] bg-yellow-400 origin-left transition-transform duration-300 ${isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}></span>
+              </Link>
+            )
+          })}
         </div>
 
         {/* Right Side Actions */}

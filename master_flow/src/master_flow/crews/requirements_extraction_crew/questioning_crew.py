@@ -21,15 +21,29 @@ class QuestioningCrew():
         )
 
     @task
-    def ask_task(self) -> Task:
+    def ask_core_task(self) -> Task:
         return Task(
-            config=self.tasks_config['ask_task']
+            config=self.tasks_config['ask_core_task']
+        )
+
+    @task
+    def ask_constraints_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['ask_constraints_task']
         )
 
     @crew
-    def crew(self) -> Crew:
+    def core_crew(self) -> Crew:
         return Crew(
             agents=[self.interviewer()],
-            tasks=[self.ask_task()],
+            tasks=[self.ask_core_task()],
+            verbose=True
+        )
+
+    @crew
+    def constraints_crew(self) -> Crew:
+        return Crew(
+            agents=[self.interviewer()],
+            tasks=[self.ask_constraints_task()],
             verbose=True
         )

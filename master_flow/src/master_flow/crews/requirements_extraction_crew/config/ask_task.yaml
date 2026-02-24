@@ -1,10 +1,18 @@
-ask_task:
+ask_core_task:
   description: >
-    We are building a personalized learning roadmap for a student, but we are missing 
-    this critical piece of information: '{missing_field}'.
-    
-    Write a short, friendly, and conversational question to ask the user for this 
-    specific information. Do not ask about anything else.
+    We are missing this core piece of information: '{missing_field}'.
+    Write a short, friendly question to ask the user for this specific information. 
+    Do not ask about anything else.
   expected_output: >
     A single conversational question.
+  agent: interviewer
+
+ask_constraints_task:
+  description: >
+    We have gathered all the necessary requirements (Topic: {topic}, Experience: {experience}, Goal: {goal}).
+    Now, write a welcoming transition message. Start by saying "Great!" (or similar), then invite them to 
+    state any constraints for learning this new skill. Give them a couple of brief examples like 
+    learning time per week or specific worries. Make it clear this is optional.
+  expected_output: >
+    A friendly, conversational prompt asking for optional constraints.
   agent: interviewer
