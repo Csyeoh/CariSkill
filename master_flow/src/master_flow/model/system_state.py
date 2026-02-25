@@ -13,3 +13,8 @@ class SystemState(ExtractedData):
     roadmap: Optional[Any] = None
     critic_feedback: Optional[Any] = None
     is_approved: bool = False
+
+    # --- NEW MACRO PLANNING FIELDS ---
+    blueprint: Optional[Dict] = None
+    macro_critic_feedback: str = "None"
+    macro_retry_count: int = 0

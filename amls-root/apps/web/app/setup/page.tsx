@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,6 +10,8 @@ import {
   GraduationCap, Award, FileUp, Folder, Lightbulb, UserCog
 } from 'lucide-react';
 import { useStudyTracker } from '@/hooks/useStudyTracker';
+import { useAuth } from '@/hooks/useAuth';
+import { createClient } from '@/utils/supabase/client';
 
 interface SetupData {
   topic: string;
@@ -22,32 +24,72 @@ interface SetupData {
 function SetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+  const supabase = createClient();
 
   // If a topic is passed in the URL (e.g., ?topic=Python), we start at step 2. 
   // Otherwise, we start at step 1 for a "New Skill".
   const initialTopic = searchParams.get('topic') || '';
-  const initialStep = initialTopic ? 2 : 1;
-
-  const [step, setStep] = useState(initialStep);
   const [formData, setFormData] = useState<SetupData>({
     topic: initialTopic,
-    experience: '',
-    proficiency: '',
+    experience: "",
+    proficiency: "",
     files: [],
-    requirements: ''
+    requirements: ""
   });
-
+  const [step, setStep] = useState(initialTopic ? 2 : 1);
   const totalSteps = 5;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Track time spent learning (falling back to "New Skill" if empty string)
   useStudyTracker(formData.topic || "New Skill Exploration");
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(prev => prev + 1);
-    } else {
-      // Route to the loading screen
-      router.push(`/setup/loading?topic=${encodeURIComponent(formData.topic)}`);
+      return;
+    }
+
+    // Final step submission logic
+    if (!formData.topic.trim()) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 1. Create a new chat session
+      const { data: chatData, error: chatError } = await supabase
+        .from('chat')
+        .insert([{ user_id: user.id, title: formData.topic.trim() }])
+        .select()
+        .single();
+
+      if (chatError) throw chatError;
+
+      // 2. Create the first message from the user (containing context from all 5 steps)
+      if (chatData) {
+        // Construct the comprehensive prompt
+        const promptContent = `Topic: ${formData.topic}\nExperience: ${formData.experience || 'None'}\nProficiency: ${formData.proficiency || 'Beginner'}\nRequirements: ${formData.requirements || 'None'}`;
+
+        const { error: messageError } = await supabase
+          .from('messages')
+          .insert([{
+            chat_id: chatData.id,
+            role: 'user',
+            content: promptContent.trim(),
+            type: 'text'
+          }]);
+
+        if (messageError) throw messageError;
+      }
+
+      // 3. Redirect to the chat page directly where MasterFlow API triggers
+      router.push(`/chat?id=${chatData.id}`);
+    } catch (error) {
+      console.error('Error creating chat session:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -55,36 +97,6 @@ function SetupContent() {
     enter: { x: 40, opacity: 0 },
     center: { x: 0, opacity: 1 },
     exit: { x: -40, opacity: 0 }
-  };
-
-  const getBackgroundIcons = () => {
-    switch (step) {
-      case 1:
-      case 2:
-      case 3:
-        return (
-          <>
-            <GraduationCap className="absolute left-[5%] md:left-[10%] top-[45%] w-32 h-32 text-[#FFD700] opacity-20 -rotate-12" />
-            <Award className="absolute right-[5%] md:right-[10%] top-[55%] w-32 h-32 text-[#FFD700] opacity-20 rotate-12" />
-          </>
-        );
-      case 4:
-        return (
-          <>
-            <FileUp className="absolute left-[8%] md:left-[12%] top-[40%] w-28 h-28 text-[#FFD700] opacity-20 -rotate-6" />
-            <Folder className="absolute right-[8%] md:right-[12%] top-[60%] w-28 h-28 text-[#FFD700] opacity-20 rotate-6" />
-          </>
-        );
-      case 5:
-        return (
-          <>
-            <UserCog className="absolute left-[5%] md:left-[10%] top-[50%] w-32 h-32 text-[#FFD700] opacity-20 -rotate-12" />
-            <Lightbulb className="absolute right-[5%] md:right-[10%] top-[60%] w-24 h-24 text-[#FFD700] opacity-20 rotate-12" />
-          </>
-        );
-      default:
-        return null;
-    }
   };
 
   return (
@@ -98,7 +110,8 @@ function SetupContent() {
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.5 }}
             className="absolute inset-0"
           >
-            {getBackgroundIcons()}
+            <GraduationCap className="absolute left-[5%] md:left-[10%] top-[45%] w-32 h-32 text-[#FFD700] opacity-20 -rotate-12" />
+            <Award className="absolute right-[5%] md:right-[10%] top-[55%] w-32 h-32 text-[#FFD700] opacity-20 rotate-12" />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -113,11 +126,9 @@ function SetupContent() {
           />
         ))}
       </div>
-
       <div className="w-full max-w-3xl z-10 flex flex-col items-center mt-12">
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
             variants={slideVariants}
             initial="enter" animate="center" exit="exit" transition={{ duration: 0.3, ease: "easeInOut" }}
             className="w-full flex flex-col items-center text-center"
@@ -265,9 +276,10 @@ function SetupContent() {
           ) : (
             <button
               onClick={handleNext}
-              className="px-10 py-4 rounded-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold text-lg flex items-center gap-2 shadow-lg transition-transform active:scale-95"
+              disabled={isSubmitting || authLoading}
+              className="px-10 py-4 rounded-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold text-lg flex items-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Start Learning 🚀
+              {isSubmitting ? "Processing..." : "Start Learning 🚀"}
             </button>
           )}
         </motion.div>

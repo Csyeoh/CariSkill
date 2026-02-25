@@ -176,9 +176,8 @@ export default function ExplorePage() {
         <div className="w-full max-w-7xl mx-auto z-10">
 
           <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6 mb-24 relative">
-            {/* ... Keep your existing Hero buttons here ... */}
-            <Link
-              href="/analyse"
+            <button
+              onClick={() => router.push('/analyse')}
               className="w-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 rounded-3xl p-6 md:p-8 flex items-center justify-between shadow-lg shadow-[#FFD700]/20 transition-all active:scale-95 group border-2 border-[#FFD700]"
             >
               <div className="text-left">
@@ -202,7 +201,7 @@ export default function ExplorePage() {
                 <Plus className="w-4 h-4 text-gray-900 stroke-[3]" />
               </div>
               {exploreData.hero.newSkillTitle}
-            </Link>
+            </button>
           </div>
 
           <div className="mb-32 flex flex-col items-center">
@@ -284,7 +283,8 @@ export default function ExplorePage() {
 
         </div>
       </main>
+
       <Footer />
-    </div>
+    </div >
   );
 }
