@@ -54,15 +54,19 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             ? JSON.parse(stringifiedRoadmap)
             : stringifiedRoadmap;
 
-          // Safely parse the CrewAI Payload which might hallucinate different array structures
-          let learningPathData = [];
+          // Safely parse the Payload which might hallucinate different array structures
+          let learningPathData: any[] = [];
           if (Array.isArray(parsed)) {
             learningPathData = parsed;
-          } else if (parsed && Array.isArray(parsed.learning_path)) {
+          } else if (parsed?.phases && Array.isArray(parsed.phases)) {
+            learningPathData = parsed.phases;
+          } else if (parsed?.roadmap?.phases && Array.isArray(parsed.roadmap.phases)) {
+            learningPathData = parsed.roadmap.phases;
+          } else if (parsed?.learning_path && Array.isArray(parsed.learning_path)) {
             learningPathData = parsed.learning_path;
-          } else if (parsed && parsed.roadmap && Array.isArray(parsed.roadmap.learning_path)) {
+          } else if (parsed?.roadmap?.learning_path && Array.isArray(parsed.roadmap.learning_path)) {
             learningPathData = parsed.roadmap.learning_path;
-          } else if (parsed && Array.isArray(parsed.modules)) {
+          } else if (parsed?.modules && Array.isArray(parsed.modules)) {
             learningPathData = parsed.modules;
           } else if (parsed && typeof parsed.error_unparsed_raw_text === 'string') {
             // Handle the specific database fallback case where the LLM generated raw conversation
@@ -72,21 +76,28 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             }];
           }
 
-          // Ultimate Catch-All: If we still don't have an array, find the first available array in the object!
+          // Ultimate Catch-All: Recursively find the first available array in the object!
           if (learningPathData.length === 0 && parsed && typeof parsed === 'object') {
-            for (const key of Object.keys(parsed)) {
-              if (Array.isArray(parsed[key]) && parsed[key].length > 0) {
-                learningPathData = parsed[key];
-                break;
+            const findFirstArray = (obj: any): any[] | null => {
+              if (!obj || typeof obj !== 'object') return null;
+              for (const key of Object.keys(obj)) {
+                if (Array.isArray(obj[key]) && obj[key].length > 0) return obj[key];
+                if (typeof obj[key] === 'object') {
+                  const nested = findFirstArray(obj[key]);
+                  if (nested) return nested;
+                }
               }
-            }
+              return null;
+            };
+            const found = findFirstArray(parsed);
+            if (found) learningPathData = found;
           }
 
           // Transform CrewAI JSON format to standard frontend SkillTrack format
           const transformedData: SkillTrack = {
             id: id,
             title: parsed?.topic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            tagline: parsed?.description || "Your AI-Generated Learning Path",
+            tagline: parsed?.description || parsed?.roadmap?.description || "Your AI-Generated Learning Path",
             progress: 0,
             estimatedTime: "Adaptive",
             welcomeMessage: "Welcome! Your specialized AI roadmap has been forged.",

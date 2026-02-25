@@ -52,6 +52,7 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
                 src="/logo.png"
                 alt="CariSkill Logo"
                 fill
+                sizes="(max-width: 768px) 192px, 192px"
                 className="object-contain object-left"
                 priority
               />
