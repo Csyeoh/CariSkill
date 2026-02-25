@@ -18,37 +18,19 @@ export async function POST(req: Request) {
   try {
     const { field, level, currentSkills } = await req.json();
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    // Temporarily unhooking AI generation to save tokens / avoid rate limits.
+    // Using mock data based on the typical payload.
+    const mockSuggestions = [
+      { text: "Docker", size: "md" },
+      { text: "TypeScript", size: "lg" },
+      { text: "GraphQL", size: "sm" },
+      { text: "AWS", size: "md" },
+      { text: "Next.js", size: "lg" },
+      { text: "Kubernetes", size: "sm" }
+    ];
 
-    const prompt = `
-      The user is a ${level} in ${field}. 
-      They are currently learning or using: ${currentSkills.join(', ')}.
-      
-      Suggest exactly 5 to 7 related but distinct skills, tools, or concepts they should explore next to level up their career. 
-      Determine the importance of each (size: 'sm', 'md', or 'lg').
-      
-      CRITICAL RULE: Keep the skill name EXTREMELY concise (maximum 1 to 3 words). 
-      For example, use "CI/CD" instead of "CI/CD (e.g., GitHub Actions)", or "REST APIs" instead of "RESTful API Design Principles".
-      
-      Return ONLY a JSON array of objects with this structure:
-      [
-        { "text": "Skill Name", "size": "md" }
-      ]
-    `;
-
-    const result = await model.generateContent(prompt);
-    let responseText = result.response.text();
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
-
-    const parsedData = JSON.parse(responseText);
-    let aiSuggestions = Array.isArray(parsedData) ? parsedData : (parsedData.suggestions || Object.values(parsedData)[0]);
-    if (!Array.isArray(aiSuggestions)) aiSuggestions = [];
-
-    // Map the AI suggestions to our safe CSS positions
-    const formattedBubbles = aiSuggestions.map((item: any, index: number) => ({
+    // Map the suggestions to our safe CSS positions
+    const formattedBubbles = mockSuggestions.map((item: any, index: number) => ({
       id: `dyn-bubble-${index}`,
       text: item.text,
       size: item.size || 'md',

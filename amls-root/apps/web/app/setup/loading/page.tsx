@@ -40,7 +40,8 @@ function LoadingRoadmapContent() {
 
     const generateRoadmap = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/roadmap', {
+        const workerUrl = process.env.NEXT_PUBLIC_AI_WORKER_URL || 'http://localhost:8080';
+        const response = await fetch(`${workerUrl}/api/generate-roadmap`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -51,6 +52,8 @@ function LoadingRoadmapContent() {
         });
 
         if (!response.ok) {
+          const text = await response.text();
+          console.error(`AI Worker Failed with status ${response.status}: ${text}`);
           throw new Error('Failed to generate roadmap');
         }
 
@@ -95,18 +98,26 @@ function LoadingRoadmapContent() {
 
           if (user) {
             console.log("Attempting to save to Supabase for User:", user.id);
+
+            // The frontend overview page expects an object structure, but Supabase stores it in a jsonb column
+            // We should wrap the payload to ensure it is always a valid JSON object matching our schema
+            const finalPayload = {
+              topic: topic,
+              roadmap: parsedRoadmap
+            };
+
             const { error: insertError } = await supabase.from('roadmaps').insert({
               user_id: user.id,
               topic: topic,
-              content: parsedRoadmap // Supabase 'jsonb' column should accept the parsed JS object
+              content: finalPayload
             });
             if (insertError) {
               console.error("Failed to save roadmap to Supabase | Code:", insertError.code, "Message:", insertError.message, "Details:", insertError.details);
-              // Fallback: try inserting it strings
+              // Fallback: try inserting as stringified json
               const { error: retryError } = await supabase.from('roadmaps').insert({
                 user_id: user.id,
                 topic: topic,
-                content: JSON.stringify(parsedRoadmap)
+                content: JSON.stringify(finalPayload)
               });
               if (retryError) console.error("Retry insert failed | Code:", retryError.code, "Message:", retryError.message, "Details:", retryError.details);
             } else {

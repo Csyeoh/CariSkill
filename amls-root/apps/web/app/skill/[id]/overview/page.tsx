@@ -86,7 +86,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           const transformedData: SkillTrack = {
             id: id,
             title: parsed?.topic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            tagline: "Your AI-Generated Learning Path",
+            tagline: parsed?.description || "Your AI-Generated Learning Path",
             progress: 0,
             estimatedTime: "Adaptive",
             welcomeMessage: "Welcome! Your specialized AI roadmap has been forged.",
@@ -94,7 +94,10 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             modules: learningPathData.map((step: any, idx: number) => ({
               id: step?.id || `m${idx + 1}`,
               title: step?.skill || step?.title || `Phase ${idx + 1}`,
-              description: step?.description || step?.content || "Learn the concepts to master this step.",
+              description: step?.obj || step?.description || step?.content || "Learn the concepts to master this step.",
+              duration: step?.duration,
+              obj: step?.obj,
+              items: step?.items || [],
               status: idx === 0 ? 'current' : 'locked' // First module is current, rest locked
             }))
           };
@@ -240,7 +243,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, margin: "-10% 0px" }}
-                  className="relative z-10 flex flex-col md:flex-row items-center gap-6 w-full md:ml-[120px]"
+                  className="relative z-10 flex flex-col md:flex-row items-center gap-6 w-full md:w-[calc(100%-120px)] md:ml-[120px] md:pr-4"
                 >
                   {/* Yellow Glowing Node */}
                   <div className="relative w-24 h-24 flex-shrink-0">
@@ -250,15 +253,34 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                   </div>
 
                   {/* Module Card */}
-                  <div className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left min-w-[280px] max-w-sm backdrop-blur-md hover:border-[#FFD700] transition-colors group">
+                  <div className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left flex-1 min-w-[250px] w-full max-w-lg backdrop-blur-md hover:border-[#FFD700] transition-colors group">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-gray-900 font-display text-xl group-hover:text-yellow-600 transition-colors">
                         {module.title}
                       </h3>
+                      {module.duration && (
+                        <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full whitespace-nowrap">
+                          {module.duration}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-500 leading-relaxed">
+                    <p className="text-sm text-gray-600 leading-relaxed mb-4">
                       {module.description}
                     </p>
+
+                    {/* Check if items array exists and has content */}
+                    {module.items && module.items.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-yellow-100/50">
+                        <ul className="text-sm text-gray-500 space-y-2 text-left">
+                          {module.items.map((item, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-yellow-500 mt-0.5">•</span>
+                              <span className="leading-snug">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}

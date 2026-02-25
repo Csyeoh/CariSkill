@@ -9,7 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 async function fileToGenerativePart(file: File) {
   const arrayBuffer = await file.arrayBuffer();
   const base64Data = Buffer.from(arrayBuffer).toString("base64");
-  
+
   return {
     inlineData: {
       data: base64Data,
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const jobPart = await fileToGenerativePart(jobFile);
 
     // 3. Set up the Gemini model
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
@@ -59,10 +59,10 @@ export async function POST(req: Request) {
 
     // 5. Send the prompt AND the PDF files directly to Gemini!
     const result = await model.generateContent([prompt, resumePart, jobPart]);
-    
+
     // 6. Clean the response text before parsing!
     let responseText = result.response.text();
-    
+
     // Strip out markdown code blocks if Gemini included them
     responseText = responseText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
 

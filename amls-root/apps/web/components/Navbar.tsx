@@ -6,38 +6,23 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
 
 interface NavbarProps {
   isLoggedIn: boolean;
 }
 
 export default function Navbar({ isLoggedIn }: NavbarProps) {
+  const { user, isLoading: authLoading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userFullName, setUserFullName] = useState<string>('Student');
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const userFullName = user?.user_metadata?.full_name || 'Student';
+  const userEmail = user?.email || '';
+  const avatarUrl = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userFullName)}&background=FFD700&color=18181b&bold=true`;
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
-  useEffect(() => {
-    // Fetch the actual user details from Supabase if logged in
-    const getUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const name = user.user_metadata?.full_name || 'Student';
-        setUserFullName(name);
-        setUserEmail(user.email || '');
-        const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FFD700&color=18181b&bold=true`;
-        setAvatarUrl(avatar);
-      }
-    };
-
-    if (isLoggedIn) {
-      getUserData();
-    }
-  }, [isLoggedIn, supabase.auth]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -122,14 +107,14 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
                   className="focus:outline-none block"
                 >
                   <div className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 overflow-hidden bg-gray-100 flex items-center justify-center">
-                    {avatarUrl ? (
+                    {authLoading && isLoggedIn ? (
+                      <div className="w-full h-full bg-gray-200 animate-pulse" />
+                    ) : (
                       <img
                         src={avatarUrl}
                         alt="User Profile"
                         className="w-full h-full object-cover"
                       />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 animate-pulse" />
                     )}
                   </div>
                 </button>

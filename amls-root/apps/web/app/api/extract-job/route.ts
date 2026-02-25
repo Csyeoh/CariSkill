@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     const jobPart = await fileToGenerativePart(jobFile);
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });

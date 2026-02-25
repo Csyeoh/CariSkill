@@ -2,6 +2,9 @@ export interface RoadmapModule {
   id: string;
   title: string;
   description: string;
+  duration?: string;
+  obj?: string;
+  items?: string[];
   status: 'completed' | 'current' | 'locked';
 }
 

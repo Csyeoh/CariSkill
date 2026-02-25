@@ -17,11 +17,19 @@ export const metadata: Metadata = {
   description: 'Your AI-Powered Path to Self-Mastery',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import { AuthProvider } from '@/components/AuthProvider';
+import { createClient } from '@/utils/supabase/server';
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans text-charcoal-text bg-background-light dark:bg-background-dark dark:text-text-dark transition-colors duration-300 min-h-screen flex flex-col" suppressHydrationWarning>
-        {children}
+        <AuthProvider user={user}>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
