@@ -12,7 +12,7 @@ class QuestioningCrew():
     def interviewer(self) -> Agent:
         llm = LLM(
             model="gemini/gemini-2.5-flash-lite",
-            api_key='AIzaSyBd80wsbqgu3wG2bMu5rq5mst8b6389Amg',
+            api_key=os.getenv("GEMINI_API_KEY"),
         )
         return Agent(
             config=self.agents_config['interviewer'],

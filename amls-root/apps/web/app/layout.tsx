@@ -17,11 +17,15 @@ export const metadata: Metadata = {
   description: 'Your AI-Powered Path to Self-Mastery',
 };
 
+import { AuthProvider } from '@/hooks/useAuth';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans text-charcoal-text bg-background-light dark:bg-background-dark dark:text-text-dark transition-colors duration-300 min-h-screen flex flex-col" suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

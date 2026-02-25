@@ -97,7 +97,12 @@ export default function ExplorePage() {
 
         <div className="w-full max-w-7xl mx-auto z-10">
 
-          <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6 mb-24 relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
+            className="w-full max-w-lg mx-auto flex flex-col items-center gap-6 mb-24 relative"
+          >
             <button
               onClick={() => router.push('/analyse')}
               className="w-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 rounded-3xl p-6 md:p-8 flex items-center justify-between shadow-lg shadow-[#FFD700]/20 transition-all active:scale-95 group border-2 border-[#FFD700]"
@@ -124,7 +129,7 @@ export default function ExplorePage() {
               </div>
               {exploreData.hero.newSkillTitle}
             </button>
-          </div>
+          </motion.div>
 
           <div className="mb-32 flex flex-col items-center">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2 mb-12">
@@ -203,9 +208,9 @@ export default function ExplorePage() {
           </div>
 
         </div>
-      </main>
+      </main >
 
       <Footer />
-    </div>
+    </div >
   );
 }

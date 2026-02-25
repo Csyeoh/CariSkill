@@ -4,7 +4,7 @@ ask_core_task:
     Write a short, friendly question to ask the user for this specific information. 
     Do not ask about anything else.
   expected_output: >
-    A single conversational question.
+    friendly conversational questions that ask for the missing information.
   agent: interviewer
 
 ask_constraints_task:
