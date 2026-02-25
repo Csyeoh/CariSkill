@@ -4,15 +4,46 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Search, ChevronDown, BookOpen, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
   const [field, setField] = useState('');
   const [level, setLevel] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        field,
+        level,
+      },
+    });
+
+    if (error) {
+      console.error("Failed to update user:", error);
+      setErrorMsg(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // After success, navigate to explore
+    router.push('/explore');
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF6] relative overflow-hidden font-sans text-gray-900">
       {/* Background Pattern and Glows */}
-      <div 
+      <div
         className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
           backgroundImage: 'radial-gradient(#E5E5E5 1.5px, transparent 1.5px)',
@@ -38,19 +69,19 @@ export default function OnboardingPage() {
 
       {/* Main Content Centered */}
       <main className="flex-grow flex items-center justify-center px-4 py-12 relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="bg-white w-full max-w-[440px] p-8 md:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100"
         >
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              // Handle form submission (e.g., save to database, redirect to explore)
-              console.log("Onboarding Data:", { field, level });
-            }}
-          >
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {errorMsg && (
+              <div className="p-3 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
+                {errorMsg}
+              </div>
+            )}
+
             {/* Field Input Section */}
             <div className="mb-8">
               <h2 className="text-xl font-bold text-center mb-4 text-gray-900">What is your field?</h2>
@@ -58,11 +89,11 @@ export default function OnboardingPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-gray-400" />
                 </div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={field}
                   onChange={(e) => setField(e.target.value)}
-                  placeholder="e.g. Data Science, Python..." 
+                  placeholder="e.g. Data Science, Python..."
                   className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/10 outline-none transition-all bg-white text-gray-800 placeholder:text-gray-400"
                   required
                 />
@@ -73,7 +104,7 @@ export default function OnboardingPage() {
             <div className="mb-10">
               <h2 className="text-[17px] font-bold text-center mb-4 text-gray-900">What is your current level?</h2>
               <div className="relative">
-                <select 
+                <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value)}
                   className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/10 outline-none transition-all bg-white text-gray-800 appearance-none cursor-pointer"
@@ -92,11 +123,16 @@ export default function OnboardingPage() {
             </div>
 
             {/* Submit Button */}
-            <button 
-              type="submit" 
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3.5 rounded-xl transition-all active:scale-[0.98]"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-300 disabled:text-gray-600 text-gray-900 font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] flex justify-center items-center"
             >
-              Start
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                "Start"
+              )}
             </button>
           </form>
         </motion.div>

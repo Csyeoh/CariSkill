@@ -4,21 +4,64 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { User, Link as LinkIcon, AlertTriangle } from 'lucide-react';
+import { useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
   const [formData, setFormData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@cariskill.com',
+    name: '',
+    email: '',
     timezone: 'Eastern Time (US & Canada)',
     language: 'English'
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
-  const handleSave = () => {
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setFormData(prev => ({
+          ...prev,
+          name: user.user_metadata?.full_name || '',
+          email: user.email || ''
+        }));
+      }
+      setLoadingInitial(false);
+    };
+    fetchUser();
+  }, []);
+
+  const handleSave = async () => {
     setIsSaving(true);
-    // Mock save delay
-    setTimeout(() => setIsSaving(false), 1000);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: formData.email,
+        data: {
+          full_name: formData.name
+        }
+      });
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      // Refresh router so components (like Sidebar if active) might pick up new info
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+    } finally {
+      setIsSaving(false);
+      // clear message after 3 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    }
   };
 
   return (
@@ -41,37 +84,43 @@ export default function SettingsPage() {
               <User className="w-5 h-5 text-gray-500" />
               <h2 className="font-display text-lg font-bold text-gray-800">Personal Information</h2>
             </div>
-            
+
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {message.text && (
+                <div className={`mb-6 p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'} border`}>
+                  {message.text}
+                </div>
+              )}
+
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 ${loadingInitial ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-gray-700" htmlFor="name">Name</label>
-                  <input 
-                    type="text" 
-                    id="name" 
+                  <input
+                    type="text"
+                    id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full rounded-lg border-gray-300 bg-gray-50 focus:border-[#FFD700] focus:ring-[#FFD700] px-4 py-2 border outline-none transition-all"
                   />
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-gray-700" htmlFor="email">Email</label>
-                  <input 
-                    type="email" 
-                    id="email" 
+                  <input
+                    type="email"
+                    id="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full rounded-lg border-gray-300 bg-gray-50 focus:border-[#FFD700] focus:ring-[#FFD700] px-4 py-2 border outline-none transition-all"
                   />
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-gray-700" htmlFor="timezone">Timezone</label>
-                  <select 
+                  <select
                     id="timezone"
                     value={formData.timezone}
-                    onChange={(e) => setFormData({...formData, timezone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
                     className="w-full rounded-lg border-gray-300 bg-gray-50 focus:border-[#FFD700] focus:ring-[#FFD700] px-4 py-2 border outline-none transition-all appearance-none"
                   >
                     <option>Eastern Time (US & Canada)</option>
@@ -79,13 +128,13 @@ export default function SettingsPage() {
                     <option>Central European Time</option>
                   </select>
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-gray-700" htmlFor="language">Language</label>
-                  <select 
+                  <select
                     id="language"
                     value={formData.language}
-                    onChange={(e) => setFormData({...formData, language: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                     className="w-full rounded-lg border-gray-300 bg-gray-50 focus:border-[#FFD700] focus:ring-[#FFD700] px-4 py-2 border outline-none transition-all appearance-none"
                   >
                     <option>English</option>
@@ -94,12 +143,17 @@ export default function SettingsPage() {
                   </select>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={handleSave}
-                className="bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold py-2.5 px-6 rounded-lg transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                disabled={isSaving || loadingInitial}
+                className="bg-[#FFD700] hover:bg-[#E6C200] disabled:bg-[#FFD700]/50 text-gray-900 font-bold py-2.5 px-6 rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 min-w-[160px]"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? (
+                  <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </div>
@@ -110,7 +164,7 @@ export default function SettingsPage() {
               <LinkIcon className="w-5 h-5 text-gray-500" />
               <h2 className="font-display text-lg font-bold text-gray-800">Linked Accounts</h2>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Facebook */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-gray-100">
@@ -169,7 +223,7 @@ export default function SettingsPage() {
               <AlertTriangle className="w-5 h-5 text-red-600" />
               <h2 className="font-display text-lg font-bold text-red-700">Delete Account</h2>
             </div>
-            
+
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-gray-800 font-medium mb-2">Once you delete your account, there is no going back. Please be certain.</p>

@@ -6,9 +6,11 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { FileText, Upload, CheckCircle2, Loader2, X, Sparkles, Briefcase } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function AddTargetJobPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [jobFile, setJobFile] = useState<File | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
 
@@ -30,11 +32,32 @@ export default function AddTargetJobPage() {
 
       const extractedData = await response.json();
 
-      // Save the generated data to sessionStorage so the detail page can read it
-      sessionStorage.setItem('newTargetJob', JSON.stringify(extractedData));
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated.");
 
-      // Redirect directly to the dynamic Job Detail page using our special ID
-      router.push('/target-job/new-job');
+      // Save to Supabase target_jobs table
+      const { data: insertedData, error: dbError } = await supabase
+        .from('target_jobs')
+        .insert({
+          user_id: user.id,
+          title: extractedData.detail.title,
+          company: extractedData.detail.company,
+          location: extractedData.detail.location,
+          salary: extractedData.detail.salary,
+          color_theme: extractedData.detail.theme,
+          stats: extractedData.detail.stats,
+          skills_have: extractedData.detail.skillsHave,
+          skills_acquire: extractedData.detail.skillsAcquire,
+          original_ad: extractedData.ad
+        })
+        .select('id')
+        .single();
+
+      if (dbError) throw new Error(`Database Error: ${dbError.message}`);
+
+      // Redirect directly to the dynamic Job Detail page using the real UUID
+      router.push(`/target-job/${insertedData.id}`);
 
     } catch (error: any) {
       alert(`Error: ${error.message}`);
@@ -64,16 +87,16 @@ export default function AddTargetJobPage() {
                   <X className="w-6 h-6" />
                 </button>
               )}
-              
+
               <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 ${jobFile ? 'bg-blue-100 text-blue-600' : 'bg-[#FEF9C3] text-[#CA8A04]'}`}>
                 {jobFile ? <CheckCircle2 className="w-12 h-12" /> : <Briefcase className="w-12 h-12" />}
               </div>
-              
+
               <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
                 {jobFile ? "Ready to Analyze!" : "Job Advertisement"}
               </h2>
               <p className="text-gray-500 mb-8 px-4">{jobFile ? jobFile.name : "Upload the job description in PDF format."}</p>
-              
+
               {!jobFile && (
                 <label className="bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold py-3.5 px-8 rounded-xl cursor-pointer shadow-md active:scale-95 transition-all text-lg flex items-center gap-2">
                   <Upload className="w-5 h-5 stroke-[2.5]" /> Browse PDF
@@ -85,7 +108,7 @@ export default function AddTargetJobPage() {
 
           {/* Action Button */}
           <div className="flex justify-center">
-            <button 
+            <button
               onClick={handleSaveAndAnalyze}
               disabled={!jobFile || isExtracting}
               className={`flex items-center gap-3 px-12 py-4 rounded-2xl font-display font-bold text-xl transition-all shadow-xl
@@ -98,7 +121,7 @@ export default function AddTargetJobPage() {
               )}
             </button>
           </div>
-          
+
         </div>
       </main>
       <Footer />

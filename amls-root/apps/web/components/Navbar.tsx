@@ -15,6 +15,7 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userFullName, setUserFullName] = useState<string>('Student');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -25,8 +26,11 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
     const getUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserFullName(user.user_metadata?.full_name || 'Student');
+        const name = user.user_metadata?.full_name || 'Student';
+        setUserFullName(name);
         setUserEmail(user.email || '');
+        const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FFD700&color=18181b&bold=true`;
+        setAvatarUrl(avatar);
       }
     };
 
@@ -117,12 +121,16 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="focus:outline-none block"
                 >
-                  <div className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 overflow-hidden bg-gray-100">
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userFullName)}&background=FFD700&color=18181b&bold=true`}
-                      alt="User Profile"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 overflow-hidden bg-gray-100 flex items-center justify-center">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="User Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 animate-pulse" />
+                    )}
                   </div>
                 </button>
 

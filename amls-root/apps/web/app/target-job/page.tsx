@@ -1,16 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Sidebar from '@/components/Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, ChevronRight, Plus } from 'lucide-react';
+import { Trash2, ChevronRight, Plus, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// IMPORT YOUR NEW DATA FILE HERE
-import { targetJobsData, TargetJob } from '@/lib/target-job-data';
+import { createClient } from '@/utils/supabase/client';
+import { PenTool, Code, LayoutTemplate } from 'lucide-react'; // Fallback icons
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -39,18 +38,52 @@ const getColorClasses = (theme: string) => {
 
 export default function TargetJobPage() {
   const router = useRouter();
+  const supabase = createClient();
 
-  // Initialize state using your imported data
-  const [jobs, setJobs] = useState<TargetJob[]>(targetJobsData);
+  // Define state to hold fetched jobs
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch from Supabase
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('target_jobs')
+        .select('id, title, company, created_at, color_theme')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setJobs(data.map((job: any) => ({
+          ...job,
+          // Format the date for display
+          dateAdded: new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          // Mock an icon for now based on theme
+          icon: job.color_theme === 'blue' ? PenTool : (job.color_theme === 'purple' ? Code : LayoutTemplate)
+        })));
+      }
+      setIsLoading(false);
+    };
+
+    fetchJobs();
+  }, []);
 
   // Handles deleting a job from the list
-  const handleDelete = (id: number, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Optimistic UI update
     setJobs(jobs.filter(job => job.id !== id));
+
+    // Actually delete from DB
+    await supabase.from('target_jobs').delete().eq('id', id);
   };
 
   // Navigates to the detail page
-  const handleCardClick = (id: number) => {
+  const handleCardClick = (id: string) => {
     router.push(`/target-job/${id}`);
   };
 
@@ -75,46 +108,59 @@ export default function TargetJobPage() {
               animate="show"
               className="flex flex-col gap-4"
             >
-              <AnimatePresence>
-                {jobs.map((job) => (
-                  <motion.div
-                    key={job.id}
-                    variants={cardVariants}
-                    layout
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => handleCardClick(job.id)}
-                    className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md border border-gray-100 flex items-center justify-between cursor-pointer transition-shadow group"
-                  >
-                    {/* Left Side: Icon & Info */}
-                    <div className="flex items-center gap-4 sm:gap-6">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getColorClasses(job.colorTheme)}`}>
-                        <job.icon className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg text-gray-900 leading-tight">
-                          {job.title} <span className="text-gray-500 font-normal">@ {job.company}</span>
-                        </h3>
-                        <p className="text-sm text-gray-400 mt-1">Added on {job.dateAdded}</p>
-                      </div>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {jobs.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">No Target Jobs Yet</h3>
+                      <p className="text-gray-500 mb-6">Upload a job description to see how your skills match up.</p>
                     </div>
-
-                    {/* Right Side: Actions */}
-                    <div className="flex items-center gap-2 sm:gap-4">
-                      <button
-                        onClick={(e) => handleDelete(job.id, e)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete Job"
+                  ) : (
+                    jobs.map((job) => (
+                      <motion.div
+                        key={job.id}
+                        variants={cardVariants as any}
+                        layout
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => handleCardClick(job.id)}
+                        className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md border border-gray-100 flex items-center justify-between cursor-pointer transition-shadow group"
                       >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      <div className="text-gray-300 group-hover:text-[#CA8A04] transition-colors">
-                        <ChevronRight className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                        {/* Left Side: Icon & Info */}
+                        <div className="flex items-center gap-4 sm:gap-6">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getColorClasses(job.color_theme)}`}>
+                            <job.icon className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                              {job.title} <span className="text-gray-500 font-normal">@ {job.company}</span>
+                            </h3>
+                            <p className="text-sm text-gray-400 mt-1">Added on {job.dateAdded}</p>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Actions */}
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <button
+                            onClick={(e) => handleDelete(job.id, e)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Job"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                          <div className="text-gray-300 group-hover:text-[#CA8A04] transition-colors">
+                            <ChevronRight className="w-6 h-6" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </AnimatePresence>
+              )}
 
               {/* Add New Button */}
               <Link

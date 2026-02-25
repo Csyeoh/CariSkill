@@ -6,11 +6,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Sidebar from '@/components/Sidebar';
 import { motion } from 'framer-motion';
-import { 
-  Building2, MapPin, DollarSign, ExternalLink, 
+import {
+  Building2, MapPin, DollarSign, ExternalLink,
   CircleDashed, AlertTriangle, Clock, CheckCircle2, Zap, Check, PenTool, Loader2
 } from 'lucide-react';
-import { jobDetailsData } from '@/lib/job-detail-data';
+import { createClient } from '@/utils/supabase/client';
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -29,25 +29,33 @@ const itemVariants = {
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
-  
+  const supabase = createClient();
+
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [job, setJob] = useState<any>(null);
 
   useEffect(() => {
-    if (id === 'new-job') {
-      // Load dynamically extracted data
-      const savedData = sessionStorage.getItem('newTargetJob');
-      if (savedData) {
-        setJob(JSON.parse(savedData).detail);
+    const fetchJobDetail = async () => {
+      if (!id) return;
+
+      const { data, error } = await supabase
+        .from('target_jobs')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && data) {
+        setJob(data);
+      } else {
+        console.error("Failed to load job details:", error);
       }
-    } else {
-      // Load from static file
-      setJob(jobDetailsData[id] || jobDetailsData["1"]);
-    }
+    };
+
+    fetchJobDetail();
   }, [id]);
 
   const getPriorityColor = (priority: string) => {
-    switch(priority) {
+    switch (priority) {
       case 'high': return 'bg-red-300';
       case 'medium': return 'bg-yellow-400';
       default: return 'bg-gray-300';
@@ -74,9 +82,9 @@ export default function JobDetailPage() {
 
           <section className="lg:col-span-3 flex flex-col h-full">
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-6">
-              
+
               {/* Header Card */}
-              <motion.div variants={itemVariants} className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 items-start">
+              <motion.div variants={itemVariants as any} className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 items-start">
                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-500">
                   <PenTool className="w-10 h-10" />
                 </div>
@@ -87,12 +95,12 @@ export default function JobDetailPage() {
                     <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {job.location}</span>
                     <span className="flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> {job.salary}</span>
                   </div>
-                  
+
                   {/* WIRED UP: View Original Ad */}
-                  <motion.button 
+                  <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(job.adLink)} 
+                    onClick={() => router.push(`/target-job/${id}/ad`)}
                     className="bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold py-2.5 px-6 rounded-xl transition-colors flex items-center gap-2 text-sm shadow-sm"
                   >
                     View Original Ad <ExternalLink className="w-4 h-4" />
@@ -101,7 +109,7 @@ export default function JobDetailPage() {
               </motion.div>
 
               {/* Stats Row */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <motion.div variants={itemVariants as any} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-500 flex-shrink-0">
                     <CircleDashed className="w-6 h-6" />
@@ -135,16 +143,16 @@ export default function JobDetailPage() {
 
               {/* Skills Split View */}
               <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* Skills You Have */}
                 <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100">
                   <h2 className="font-display text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
                     <CheckCircle2 className="w-6 h-6 text-green-500" /> Skills You Have
                   </h2>
                   <div className="flex flex-col gap-3">
-                    {job.skillsHave.map((skill, index) => (
-                      <motion.div 
-                        key={index} 
+                    {job.skills_have.map((skill: string, index: number) => (
+                      <motion.div
+                        key={index}
                         whileHover={{ x: 4 }}
                         className="bg-green-50/50 border border-green-100 rounded-xl p-4 flex items-center justify-between"
                       >
@@ -164,9 +172,9 @@ export default function JobDetailPage() {
                     <Zap className="w-6 h-6 text-[#CA8A04]" /> Skills to Acquire
                   </h2>
                   <div className="flex flex-col gap-3">
-                    {job.skillsAcquire.map((skill, index) => (
-                      <motion.div 
-                        key={index} 
+                    {job.skills_acquire.map((skill: any, index: number) => (
+                      <motion.div
+                        key={index}
                         whileHover={{ y: -2 }}
                         className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center transition-shadow hover:shadow-md hover:border-yellow-200"
                       >
@@ -176,7 +184,7 @@ export default function JobDetailPage() {
                         </div>
 
                         {/* WIRED UP: Add to Roadmap */}
-                        <motion.button 
+                        <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => router.push(`/setup?topic=${encodeURIComponent(skill.name)}`)}
