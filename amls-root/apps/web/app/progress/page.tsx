@@ -5,8 +5,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Network, Database, Code2, Brain, Check, Lock, PlusCircle } from 'lucide-react';
-import { mockSkillTracks } from '@/lib/progress-data';
+import { Network, Database, Code2, Brain, Check, Lock, PlusCircle, Loader2 } from 'lucide-react';
+import { mockSkillTracks, SkillTrack, SkillNode as ISkillNode } from '@/lib/progress-data';
 
 const iconMap: Record<string, React.ElementType> = {
   Database: Database,
@@ -14,23 +14,117 @@ const iconMap: Record<string, React.ElementType> = {
   Brain: Brain,
 };
 
+// Fallback logic exactly as used in the overview page
+const parseRoadmapData = (stringifiedRoadmap: any, topic: string) => {
+  let learningPathData: any[] = [];
+  try {
+    const parsed = typeof stringifiedRoadmap === 'string'
+      ? JSON.parse(stringifiedRoadmap)
+      : stringifiedRoadmap;
+
+    if (Array.isArray(parsed)) {
+      learningPathData = parsed;
+    } else if (parsed?.phases && Array.isArray(parsed.phases)) {
+      learningPathData = parsed.phases;
+    } else if (parsed?.roadmap?.phases && Array.isArray(parsed.roadmap.phases)) {
+      learningPathData = parsed.roadmap.phases;
+    } else if (parsed?.learning_path && Array.isArray(parsed.learning_path)) {
+      learningPathData = parsed.learning_path;
+    } else if (parsed?.roadmap?.learning_path && Array.isArray(parsed.roadmap.learning_path)) {
+      learningPathData = parsed.roadmap.learning_path;
+    } else if (parsed?.modules && Array.isArray(parsed.modules)) {
+      learningPathData = parsed.modules;
+    } else if (parsed && typeof parsed.error_unparsed_raw_text === 'string') {
+      learningPathData = [{ title: "AI Generation Alert", description: "Unformatted data" }];
+    }
+
+    if (learningPathData.length === 0 && parsed && typeof parsed === 'object') {
+      const findFirstArray = (obj: any): any[] | null => {
+        if (!obj || typeof obj !== 'object') return null;
+        for (const key of Object.keys(obj)) {
+          if (Array.isArray(obj[key]) && obj[key].length > 0) return obj[key];
+          if (typeof obj[key] === 'object') {
+            const nested = findFirstArray(obj[key]);
+            if (nested) return nested;
+          }
+        }
+        return null;
+      };
+      const found = findFirstArray(parsed);
+      if (found) learningPathData = found;
+    }
+  } catch (e) {
+    console.error("Failed to parse roadmap data", e);
+  }
+  return learningPathData;
+};
+
 export default function ProgressPage() {
-  const [isJingen, setIsJingen] = useState(false);
+  const [tracks, setTracks] = useState<SkillTrack[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { createClient } = await import('@/utils/supabase/client');
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+    const fetchRoadmaps = async () => {
+      try {
+        const { createClient } = await import('@/utils/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
 
-      if (user?.email === 'jingen@gmail.com') {
-        setIsJingen(true);
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: roadmaps, error } = await supabase
+          .from('roadmaps')
+          .select('id, topic, content')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching roadmaps:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (roadmaps && roadmaps.length > 0) {
+          const userTracks: SkillTrack[] = roadmaps.map((r: any, rIdx) => {
+            const parsedArray = parseRoadmapData(r.content, r.topic);
+
+            // Generate node status for UI
+            const skills: ISkillNode[] = parsedArray.map((moduleItem: any, idx) => ({
+              id: `${r.id}-node-${idx}`,
+              title: moduleItem?.skill || moduleItem?.title || `Phase ${idx + 1}`,
+              status: idx === 0 ? 'progress' : 'locked',
+              percentage: idx === 0 ? '0%' : undefined
+            }));
+
+            // Match an icon dynamically.
+            const iconKeys = Object.keys(iconMap);
+            const selectedIcon = iconKeys[rIdx % iconKeys.length];
+
+            return {
+              id: r.topic.toLowerCase().replace(/\\s+/g, '-'), // Using topic as slug to match /skill/[id]/overview
+              title: r.topic,
+              icon: selectedIcon,
+              overallProgress: '0% Complete',
+              skills
+            };
+          });
+          setTracks(userTracks);
+        } else if (user.email === 'jingen@gmail.com') {
+          setTracks(mockSkillTracks);
+        }
+
+      } catch (err) {
+        console.error("Failed to load tracks", err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    checkAuth();
-  }, []);
 
-  const tracksToDisplay = isJingen ? mockSkillTracks : [];
+    fetchRoadmaps();
+  }, []);
 
   const popNode = {
     hidden: { opacity: 0, scale: 0.6, y: 30 },
@@ -95,7 +189,7 @@ export default function ProgressPage() {
     );
   };
 
-  const dynamicLineOffset = tracksToDisplay.length > 0 ? `calc(50% / ${tracksToDisplay.length})` : '50%';
+  const dynamicLineOffset = tracks.length > 0 ? `calc(50% / ${tracks.length})` : '50%';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF6] font-sans text-gray-900">
@@ -124,14 +218,18 @@ export default function ProgressPage() {
                 </div>
               </div>
             </motion.div>
-
             <motion.div
               initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.4 }}
               className="h-10 w-[2px] bg-gray-300 origin-top"
             />
           </div>
 
-          {tracksToDisplay.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center mt-12 mb-20 flex flex-col items-center justify-center opacity-70">
+              <Loader2 className="w-12 h-12 text-[#FFD700] animate-spin mb-4" />
+              <p className="text-xl text-gray-800 font-bold mix-blend-multiply">Loading your skills...</p>
+            </div>
+          ) : tracks.length === 0 ? (
             <div className="text-center mt-12 mb-20">
               <p className="text-xl text-gray-400 font-medium">You haven&apos;t started any skill tracks yet.</p>
               <p className="text-gray-400 mt-2">Generate a new roadmap to begin your journey!</p>
@@ -145,7 +243,7 @@ export default function ProgressPage() {
                 style={{ left: dynamicLineOffset, right: dynamicLineOffset }}
               />
 
-              {tracksToDisplay.map((track) => {
+              {tracks.map((track) => {
                 const TrackIcon = iconMap[track.icon];
 
                 return (
@@ -158,8 +256,7 @@ export default function ProgressPage() {
 
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={popNode} className="flex flex-col items-center z-20 bg-[#FFFDF6] w-full pt-4 md:pt-0">
 
-                      {/* WRAPPED ICON AND TITLE IN A LINK */}
-                      <Link href={`/skill/${track.id}`} className="flex flex-col items-center group cursor-pointer focus:outline-none">
+                      <Link href={`/skill/${track.id}/overview`} className="flex flex-col items-center group cursor-pointer focus:outline-none">
                         <div className="w-20 h-20 rounded-2xl bg-white border border-gray-100 shadow-md flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:border-yellow-400 group-hover:scale-105 transition-all duration-300">
                           {TrackIcon && <TrackIcon className="text-yellow-500 w-10 h-10 group-hover:text-yellow-600 transition-colors" />}
                         </div>
@@ -179,7 +276,7 @@ export default function ProgressPage() {
                         className="absolute top-0 bottom-[2rem] w-[2px] bg-gray-300 -z-10 origin-top"
                       />
 
-                      {track.skills.map((skill) => (
+                      {track.skills?.map((skill) => (
                         <SkillNode
                           key={skill.id}
                           title={skill.title}
@@ -202,7 +299,7 @@ export default function ProgressPage() {
         >
           <button className="flex items-center gap-2 px-8 py-4 bg-primary text-gray-900 rounded-full font-bold text-lg hover:bg-yellow-400 transition-all shadow-[0_4px_20px_rgba(255,215,0,0.4)] hover:shadow-[0_8px_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-1 ring-4 ring-yellow-100 active:scale-95">
             <PlusCircle className="w-6 h-6 stroke-[2.5]" />
-            Expand My Tree
+            <Link href="/explore">Expand My Tree</Link>
           </button>
         </motion.div>
 
