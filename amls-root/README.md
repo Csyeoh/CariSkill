@@ -16,7 +16,8 @@ Before you begin, ensure your local machine has the following installed:
 1. **Git**: [Download Git](https://git-scm.com/downloads)
 2. **Node.js (v18 or higher)**: [Download Node.js](https://nodejs.org/)
 3. **Python (v3.9 or higher)**: [Download Python](https://www.python.org/downloads/)
-4. **API Keys needed**:
+4. **Docker Desktop**: [Download Docker](https://www.docker.com/products/docker-desktop/) (Required to run the local Qdrant Vector DB)
+5. **API Keys needed**:
    - Google Generative AI (Gemini) API Key
    - Supabase Project URL & Anon Key
    - Qdrant Cloud URL & API Key
@@ -43,7 +44,12 @@ This project uses a monorepo structure containing three separate services in the
 
 The backend handles document parsing, vector database interactions, and complex AI agents.
 
-1. Navigate to the API directory:
+1. Start the local Qdrant Vector Database via Docker:
+   From the project root (`amls-root`), run:
+   ```bash
+   docker-compose up -d
+   ```
+2. Navigate to the API directory:
    ```bash
    cd apps/api
    ```
@@ -139,3 +145,20 @@ Once all three terminal windows are running their respective servers without err
 1. Open your web browser.
 2. Navigate to [http://localhost:3000](http://localhost:3000)
 3. You can now use the fully functional CariSkill application locally!
+
+---
+
+## 🤖 AI Agent Bootstrap Instructions
+
+If an AI Assistant (like Antigravity or Claude) is reading this to automatically set up the workspace for the user, execute these exact steps:
+
+1. **Boot the Database**: From `amls-root`, run `docker-compose up -d` to spin up Qdrant.
+2. **Write Environments**:
+   - `apps/api/.env`: Needs `GEMINI_API_KEY`, `TAVILY_API_KEY`, `QDRANT_URL="http://localhost:6333"`.
+   - `apps/ai-worker/.env`: Needs `GEMINI_API_KEY` and `PORT=8080`.
+   - `apps/web/.env.local`: Needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_AI_WORKER_URL="http://localhost:8080"`.
+3. **Launch the Microservices**:
+   - Open Background Terminal 1: `cd apps/api && pip install -r requirements.txt && uvicorn main:app --reload`
+   - Open Background Terminal 2: `cd apps/ai-worker && npm install && npm run dev`
+   - Open Background Terminal 3: `cd apps/web && npm install && npm run dev`
+4. Wait 15 seconds, and confirm that all 3 ports (8000, 8080, 3000) are fully operational without crashing.
