@@ -10,7 +10,7 @@ import {
   GraduationCap, Award, FileUp, Folder, Lightbulb, UserCog
 } from 'lucide-react';
 import { useStudyTracker } from '@/hooks/useStudyTracker';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/utils/supabase/client';
 
 interface SetupData {
@@ -24,7 +24,7 @@ interface SetupData {
 function SetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const supabase = createClient();
 
   // If a topic is passed in the URL (e.g., ?topic=Python), we start at step 2. 
@@ -45,13 +45,14 @@ function SetupContent() {
   useStudyTracker(formData.topic || "New Skill Exploration");
 
   const handleNext = async () => {
-    if (step < totalSteps) {
-      setStep(prev => prev + 1);
+    if (!formData.topic.trim()) return;
+
+    // If the auth hook is still resolving, we shouldn't act yet.
+    if (authLoading) {
+      console.log("Auth is still loading, please wait...");
       return;
     }
 
-    // Final step submission logic
-    if (!formData.topic.trim()) return;
     if (!user) {
       router.push('/login');
       return;
@@ -59,7 +60,7 @@ function SetupContent() {
 
     setIsSubmitting(true);
     try {
-      // 1. Create a new chat session
+      // 1. Create a new chat session using the topic
       const { data: chatData, error: chatError } = await supabase
         .from('chat')
         .insert([{ user_id: user.id, title: formData.topic.trim() }])
@@ -68,10 +69,9 @@ function SetupContent() {
 
       if (chatError) throw chatError;
 
-      // 2. Create the first message from the user (containing context from all 5 steps)
+      // 2. Create the first initial message from the user
       if (chatData) {
-        // Construct the comprehensive prompt
-        const promptContent = `Topic: ${formData.topic}\nExperience: ${formData.experience || 'None'}\nProficiency: ${formData.proficiency || 'Beginner'}\nRequirements: ${formData.requirements || 'None'}`;
+        const promptContent = `I want to learn: ${formData.topic}. Please assist me in creating a personalized learning roadmap.`;
 
         const { error: messageError } = await supabase
           .from('messages')
@@ -85,7 +85,7 @@ function SetupContent() {
         if (messageError) throw messageError;
       }
 
-      // 3. Redirect to the chat page directly where MasterFlow API triggers
+      // 3. Redirect to the chat page directly
       router.push(`/chat?id=${chatData.id}`);
     } catch (error) {
       console.error('Error creating chat session:', error);
@@ -106,7 +106,7 @@ function SetupContent() {
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center max-w-7xl mx-auto w-full">
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
+            key="bg-icons"
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.5 }}
             className="absolute inset-0"
           >
@@ -116,16 +116,6 @@ function SetupContent() {
         </AnimatePresence>
       </div>
 
-      {/* Progress Bar (Now 5 steps) */}
-      <div className="w-full max-w-sm mx-auto z-10 absolute top-12 flex items-center justify-center gap-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className={`h-2 rounded-full transition-all duration-500 ${i <= step ? 'bg-[#FFD700] w-12' : 'bg-gray-200 w-8'
-              }`}
-          />
-        ))}
-      </div>
       <div className="w-full max-w-3xl z-10 flex flex-col items-center mt-12">
         <AnimatePresence mode="wait">
           <motion.div
@@ -133,155 +123,33 @@ function SetupContent() {
             initial="enter" animate="center" exit="exit" transition={{ duration: 0.3, ease: "easeInOut" }}
             className="w-full flex flex-col items-center text-center"
           >
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+              What do you want to learn?
+            </h1>
+            <p className="text-gray-500 text-lg mb-12 max-w-md">
+              Tell us the topic or goal, and our AI will build your personalized path.
+            </p>
 
-            {/* NEW STEP 1: Topic */}
-            {step === 1 && (
-              <>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  What do you want to learn?
-                </h1>
-                <p className="text-gray-500 text-lg mb-12 max-w-md">
-                  Tell us the topic or goal, and our AI will build your personalized path.
-                </p>
-
-                <input
-                  type="text"
-                  value={formData.topic}
-                  onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && handleNext()}
-                  placeholder="e.g., Python Programming, Digital Marketing..."
-                  className="w-full max-w-lg p-5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 focus:border-[#FFD700] outline-none shadow-sm text-lg transition-colors bg-white/90 backdrop-blur-sm"
-                  autoFocus
-                />
-              </>
-            )}
-
-            {/* STEP 2: Experience */}
-            {step === 2 && (
-              <>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  Have you learned<br />this topic before?
-                </h1>
-                <p className="text-gray-500 text-lg mb-12 max-w-md">
-                  Tell us briefly about your past experience so we can adjust the content difficulty.
-                </p>
-
-                <input
-                  type="text"
-                  value={formData.experience}
-                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && handleNext()}
-                  placeholder="Enter your experience..."
-                  className="w-full max-w-lg p-5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 focus:border-[#FFD700] outline-none shadow-sm text-lg transition-colors bg-white/90 backdrop-blur-sm"
-                  autoFocus
-                />
-              </>
-            )}
-
-            {/* STEP 3: Proficiency */}
-            {step === 3 && (
-              <>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  What is your current<br />proficiency level?
-                </h1>
-                <p className="text-gray-500 text-lg mb-12 max-w-md">
-                  This helps us tailor the learning roadmap to your exact starting point.
-                </p>
-
-                <div className="w-full max-w-lg relative">
-                  <select
-                    value={formData.proficiency}
-                    onChange={(e) => setFormData({ ...formData, proficiency: e.target.value })}
-                    className="w-full p-5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 focus:border-[#FFD700] outline-none shadow-sm text-lg appearance-none bg-white/90 backdrop-blur-sm cursor-pointer transition-colors text-gray-700 font-medium"
-                  >
-                    <option value="" disabled>Select your level...</option>
-                    <option value="beginner">Beginner (No prior knowledge)</option>
-                    <option value="intermediate">Intermediate (Some basic knowledge)</option>
-                    <option value="advanced">Advanced (Looking for deep dives)</option>
-                  </select>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                    <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2 2L8 8L14 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* STEP 4: Files */}
-            {step === 4 && (
-              <>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  Do you have any related<br />study materials?
-                </h1>
-                <p className="text-gray-500 text-lg mb-12 max-w-lg">
-                  Upload your notes, past exams, or syllabus. We'll analyze them to personalize your curriculum.
-                </p>
-
-                <div className="w-full max-w-2xl bg-white/70 backdrop-blur-md rounded-[32px] border-2 border-dashed border-gray-300 p-12 flex flex-col items-center hover:border-[#FFD700] transition-colors cursor-pointer group">
-                  <div className="w-20 h-20 bg-[#FEF9C3] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <UploadCloud className="w-8 h-8 text-[#A16207]" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-gray-900 mb-2">Drag & drop files here</h3>
-                  <p className="text-gray-400 text-sm mb-8">Supported formats: PDF, DOCX, TXT (Max 10MB)</p>
-
-                  <button className="bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold py-3.5 px-8 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2">
-                    <Folder className="w-5 h-5 fill-current" />
-                    Browse Files
-                  </button>
-
-                  <div className="flex gap-4 mt-8 text-gray-300">
-                    <FileText className="w-6 h-6" />
-                    <ImageIcon className="w-6 h-6" />
-                    <FileUp className="w-6 h-6" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* STEP 5: Requirements */}
-            {step === 5 && (
-              <>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  Any specific requirements?
-                </h1>
-                <p className="text-gray-500 text-lg mb-10 max-w-lg">
-                  Let us know if you have any preferences, constraints, or specific goals so we can fine-tune your roadmap.
-                </p>
-
-                <div className="w-full max-w-2xl relative">
-                  <textarea
-                    value={formData.requirements}
-                    onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                    placeholder="e.g., I prefer video tutorials over reading, I can only study on weekends, I want to focus on practical projects..."
-                    className="w-full p-6 rounded-3xl border-2 border-gray-100 hover:border-gray-200 focus:border-[#FFD700] outline-none shadow-sm h-48 resize-none text-lg transition-colors bg-white/90 backdrop-blur-sm"
-                  />
-                  <span className="absolute bottom-5 right-6 text-gray-400 text-sm font-medium">Optional</span>
-                </div>
-              </>
-            )}
-
+            <input
+              type="text"
+              value={formData.topic}
+              onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+              placeholder="e.g., Python Programming, Digital Marketing..."
+              className="w-full max-w-lg p-5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 focus:border-[#FFD700] outline-none shadow-sm text-lg transition-colors bg-white/90 backdrop-blur-sm"
+              autoFocus
+            />
           </motion.div>
         </AnimatePresence>
 
         <motion.div className="mt-12" layout>
-          {step < totalSteps ? (
-            <button
-              onClick={handleNext}
-              disabled={step === 1 && !formData.topic.trim()} // Disable next on step 1 if empty
-              className="w-16 h-16 rounded-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 flex items-center justify-center shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowRight className="w-8 h-8" />
-            </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              disabled={isSubmitting || authLoading}
-              className="px-10 py-4 rounded-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold text-lg flex items-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Processing..." : "Start Learning 🚀"}
-            </button>
-          )}
+          <button
+            onClick={handleNext}
+            disabled={isSubmitting || !formData.topic.trim()}
+            className="px-10 py-4 rounded-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold text-lg flex items-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Starting..." : "Start Exploring 🚀"}
+          </button>
         </motion.div>
       </div>
     </main>

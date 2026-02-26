@@ -100,6 +100,41 @@ app.post('/api/generate-roadmap', async (req, res) => {
   }
 });
 
+// AI Chat Endpoint for Masterflow Conversation
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { session_id, message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    console.log(`[Chat] Received message for session ${session_id}: ${message}`);
+
+    const prompt = `
+      You are an expert AI mentor guiding a user to build a personalized learning roadmap. 
+      The user just said: "${message}"
+
+      Keep your response concise, conversational, and encouraging. Ask 1 clarifying question at a time to gather their exact requirements (Topic, Experience Level, Special constraints) if you don't have them yet.
+      Once you feel you have enough information, tell them you are ready to generate the roadmap.
+    `;
+
+    const modelName = "gemini-2.5-flash";
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    const result = await model.generateContent(prompt);
+    let replyText = result.response.text();
+
+    console.log(`[Chat] Replied with ${replyText.substring(0, 50)}...`);
+
+    return res.status(200).json({ response: { reply: replyText } });
+
+  } catch (error: any) {
+    console.error("AI Chat Error:", error);
+    return res.status(500).json({ status: "error", error: "Failed to respond to chat", message: error.message });
+  }
+});
+
 // Start server
 app.listen(port as number, '0.0.0.0', () => {
   console.log(`AI Worker listening on port ${port}`);

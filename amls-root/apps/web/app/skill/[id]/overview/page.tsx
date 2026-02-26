@@ -10,6 +10,7 @@ import {
   Lock, Play, Rocket, Hand, Clock, Quote,
   Footprints, Trophy, Loader2
 } from 'lucide-react';
+import FloatingChat from '@/components/FloatingChat';
 
 export default function SkillOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -17,6 +18,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
 
   const [data, setData] = useState<SkillTrack | null>(null);
   const [loading, setLoading] = useState(true);
+  const [associatedChatId, setAssociatedChatId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +44,19 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             stringifiedRoadmap = typeof roadmaps[0].content === 'string'
               ? roadmaps[0].content
               : JSON.stringify(roadmaps[0].content);
+          }
+
+          // Fetch associated chat session
+          const { data: chatData, error: chatError } = await supabase
+            .from('chat')
+            .select('id')
+            .eq('user_id', user.id)
+            .ilike('title', `%${id.replace(/-/g, ' ')}%`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (chatData && chatData.length > 0) {
+            setAssociatedChatId(chatData[0].id);
           }
         }
       } catch (err) {
@@ -344,6 +359,9 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </main>
+
+      {associatedChatId && <FloatingChat chatId={associatedChatId} />}
+
       <Footer />
     </div>
   );

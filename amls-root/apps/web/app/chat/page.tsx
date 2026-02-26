@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { History, Bot, User, Send, Compass } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
 import Navbar from '@/components/Navbar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -33,7 +33,7 @@ export default function ChatPage() {
 }
 
 function ChatContent() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const supabase = createClient();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -306,42 +306,7 @@ function ChatContent() {
             <Navbar isLoggedIn={!!user} />
 
             <div className="flex flex-1 w-full overflow-hidden">
-                {/* Sidebar for Chat History */}
-                <motion.div
-                    variants={sidebarVariants}
-                    initial="hidden"
-                    animate="show"
-                    className="w-80 border-r border-gray-100 flex flex-col bg-white overflow-y-auto"
-                >
-                    <div className="p-6 pb-4 flex items-center gap-3 font-semibold text-gray-900 text-lg">
-                        <History className="w-5 h-5 text-gray-600" />
-                        Chat History
-                    </div>
-                    <div className="flex-1 px-4 space-y-2">
-                        {chats.length === 0 ? (
-                            <div className="text-sm text-gray-500 italic p-4 text-center mt-4">No recent history</div>
-                        ) : (
-                            chats.map((chat) => {
-                                const isActive = selectedChatId === chat.id;
-                                return (
-                                    <div
-                                        key={chat.id}
-                                        onClick={() => router.push(`/chat?id=${chat.id}`)}
-                                        className={`p-4 rounded-xl cursor-pointer transition-colors ${isActive
-                                            ? 'bg-[#FFFDF0] border border-[#fef08a]'
-                                            : 'hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <h3 className={`font-semibold text-sm ${isActive ? 'text-gray-900' : 'text-gray-700 font-medium'}`}>
-                                            {chat.title || 'New Conversation'}
-                                        </h3>
-                                        <p className="text-xs text-gray-400 mt-1">{formatDate(chat.created_at)}</p>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </motion.div>
+                {/* Sidebar for Chat History (Removed for focused flow) */}
 
                 {/* Main Chat Area */}
                 <div className="flex-1 flex flex-col relative bg-[#FFFDF5]">

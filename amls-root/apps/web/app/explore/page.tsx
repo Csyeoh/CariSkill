@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { exploreData, BubbleSize } from '@/lib/explore-data';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Upload, Plus, Sparkles, TrendingUp, Users, Loader2
 } from 'lucide-react';
@@ -17,9 +17,9 @@ const containerVariants = {
   show: { opacity: 1, transition: { staggerChildren: 0.15 } }
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, x: 50 },
-  show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+const cardVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 200, damping: 20 } }
 };
 
 const FloatingBubble = ({ text, size, top, left, delay, onClick }: any) => {
@@ -191,7 +191,7 @@ export default function ExplorePage() {
               <div className="bg-white/90 p-3 md:p-4 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform shadow-sm">
                 <Upload className="w-6 h-6 md:w-8 md:h-8 text-[#A16207] stroke-[2.5]" />
               </div>
-            </Link>
+            </button>
 
             <Link
               href="/setup"
@@ -201,7 +201,7 @@ export default function ExplorePage() {
                 <Plus className="w-4 h-4 text-gray-900 stroke-[3]" />
               </div>
               {exploreData.hero.newSkillTitle}
-            </button>
+            </Link>
           </div>
 
           <div className="mb-32 flex flex-col items-center">
