@@ -8,6 +8,55 @@ import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// Lightweight markdown renderer — no external dependency
+function MarkdownText({ content }: { content: string }) {
+    const lines = content.split('\n');
+    const elements: React.ReactNode[] = [];
+
+    const renderInline = (text: string, key: string): React.ReactNode => {
+        const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
+        return parts.map((part, i) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={`${key}-b${i}`} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
+            } else if (part.startsWith('*') && part.endsWith('*')) {
+                return <em key={`${key}-em${i}`} className="italic text-gray-600">{part.slice(1, -1)}</em>;
+            } else if (part.startsWith('`') && part.endsWith('`')) {
+                return <code key={`${key}-c${i}`} className="bg-gray-100 px-1 rounded text-sm font-mono">{part.slice(1, -1)}</code>;
+            }
+            return part;
+        });
+    };
+
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i];
+        if (line.match(/^[-*•]\s/)) {
+            const listItems: string[] = [];
+            while (i < lines.length && lines[i].match(/^[-*•]\s/)) {
+                listItems.push(lines[i].replace(/^[-*•]\s/, ''));
+                i++;
+            }
+            elements.push(
+                <ul key={`ul-${i}`} className="list-disc pl-5 my-1 space-y-0.5">
+                    {listItems.map((item, idx) => (
+                        <li key={idx} className="text-[15px]">{renderInline(item, `li-${i}-${idx}`)}</li>
+                    ))}
+                </ul>
+            );
+        } else if (line.match(/^#+\s/)) {
+            const headingText = line.replace(/^#+\s/, '');
+            elements.push(<p key={`h-${i}`} className="font-semibold text-gray-900 mb-1">{headingText}</p>);
+            i++;
+        } else if (line.trim() === '') {
+            i++;
+        } else {
+            elements.push(<p key={`p-${i}`} className="mb-1.5">{renderInline(line, `p-${i}`)}</p>);
+            i++;
+        }
+    }
+    return <>{elements}</>;
+}
+
 interface ChatRecord {
     id: string;
     created_at: string;
@@ -152,24 +201,17 @@ function ChatContent() {
 
             const triggerInitialAI = async () => {
                 try {
-                    const response = await fetch('http://localhost:8080/api/chat', {
+                    const response = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_id: selectedChatId, message: messages[0].content })
+                        body: JSON.stringify({ session_id: selectedChatId, message: messages[0].content, history: messages })
                     });
 
                     if (response.ok) {
                         const data = await response.json();
-                        let aiReply = "No response";
-                        if (data.response?.reply) {
-                            aiReply = data.response.reply;
-                        } else if (data.response?.result) {
-                            aiReply = typeof data.response.result === 'string' ? data.response.result : JSON.stringify(data.response.result);
-                        } else if (typeof data.response === 'string') {
-                            aiReply = data.response;
-                        } else {
-                            aiReply = JSON.stringify(data.response);
-                        }
+                        const aiReply = data.response?.reply || "Let me help you plan your learning journey!";
+                        const readyToGenerate = data.response?.ready_to_generate;
+                        const topic = data.response?.topic;
 
                         const { data: insertedMsg, error: insertAiError } = await supabase
                             .from('messages')
@@ -182,6 +224,12 @@ function ChatContent() {
                                 if (prev.some(m => m.id === insertedMsg.id)) return prev;
                                 return [...prev, insertedMsg];
                             });
+                        }
+
+                        if (readyToGenerate && topic) {
+                            setTimeout(() => {
+                                router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
+                            }, 1500);
                         }
                     }
                 } catch (error) {
@@ -218,26 +266,19 @@ function ChatContent() {
                 });
             }
 
-            const response = await fetch('http://localhost:8080/api/chat', {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: selectedChatId, message: currentMsg })
+                body: JSON.stringify({ session_id: selectedChatId, message: currentMsg, history: messages })
             });
 
             if (!response.ok) throw new Error(`API returned ${response.status}`);
 
             const data = await response.json();
 
-            let aiReply = "No response from AI";
-            if (data.response?.reply) {
-                aiReply = data.response.reply;
-            } else if (data.response?.result) {
-                aiReply = typeof data.response.result === 'string' ? data.response.result : JSON.stringify(data.response.result);
-            } else if (typeof data.response === 'string') {
-                aiReply = data.response;
-            } else if (data.response) {
-                aiReply = JSON.stringify(data.response);
-            }
+            const aiReply = data.response?.reply || "I'm here to help!";
+            const readyToGenerate = data.response?.ready_to_generate;
+            const topic = data.response?.topic;
 
             const { data: insertedAiMsg, error: aiInsertError } = await supabase
                 .from('messages')
@@ -252,6 +293,12 @@ function ChatContent() {
                     if (prev.some(m => m.id === insertedAiMsg.id)) return prev;
                     return [...prev, insertedAiMsg];
                 });
+            }
+
+            if (readyToGenerate && topic) {
+                setTimeout(() => {
+                    router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
+                }, 1500);
             }
 
         } catch (error) {
@@ -366,8 +413,8 @@ function ChatContent() {
                                                     <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center shrink-0 border-2 border-transparent shadow-sm">
                                                         <Bot size={20} className="text-yellow-400" />
                                                     </div>
-                                                    <div className="bg-white rounded-2xl rounded-tl-sm shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 border border-gray-100 text-gray-700 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap">
-                                                        {message.content}
+                                                    <div className="bg-white rounded-2xl rounded-tl-sm shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 border border-gray-100 text-gray-700 text-[15px] leading-relaxed max-w-[85%]">
+                                                        <MarkdownText content={message.content} />
                                                     </div>
                                                 </motion.div>
                                             );
