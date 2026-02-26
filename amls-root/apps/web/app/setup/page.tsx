@@ -69,16 +69,14 @@ function SetupContent() {
 
       if (chatError) throw chatError;
 
-      // 2. Create the first initial message from the user
+      // 2. Create the first initial message — exactly what the user typed
       if (chatData) {
-        const promptContent = `I want to learn: ${formData.topic}. Please assist me in creating a personalized learning roadmap.`;
-
         const { error: messageError } = await supabase
           .from('messages')
           .insert([{
             chat_id: chatData.id,
             role: 'user',
-            content: promptContent.trim(),
+            content: formData.topic.trim(),
             type: 'text'
           }]);
 

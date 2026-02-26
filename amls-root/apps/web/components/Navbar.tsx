@@ -64,6 +64,7 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
         <div className="hidden md:flex space-x-8 font-medium absolute left-1/2 -translate-x-1/2">
           {[
             { name: 'My Progress', path: '/progress' },
+            { name: 'My Roadmaps', path: '/roadmaps' },
             { name: 'Explore', path: '/explore' },
             { name: 'Chat', path: '/chat' },
             { name: 'Bookmark', path: '/bookmark' },

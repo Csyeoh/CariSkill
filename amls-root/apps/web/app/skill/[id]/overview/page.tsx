@@ -19,6 +19,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
   const [data, setData] = useState<SkillTrack | null>(null);
   const [loading, setLoading] = useState(true);
   const [associatedChatId, setAssociatedChatId] = useState<string | null>(null);
+  const [roadmapId, setRoadmapId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,7 +34,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
         if (user) {
           const { data: roadmaps, error } = await supabase
             .from('roadmaps')
-            .select('content')
+            .select('id, content')
             .eq('user_id', user.id)
             // attempt matching the topic to the id slug 
             .ilike('topic', `%${id.replace(/-/g, ' ')}%`)
@@ -44,20 +45,46 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             stringifiedRoadmap = typeof roadmaps[0].content === 'string'
               ? roadmaps[0].content
               : JSON.stringify(roadmaps[0].content);
+            setRoadmapId(roadmaps[0].id);
           }
 
-          // Fetch associated chat session
-          const { data: chatData, error: chatError } = await supabase
-            .from('chat')
-            .select('id')
-            .eq('user_id', user.id)
-            .ilike('title', `%${id.replace(/-/g, ' ')}%`)
-            .order('created_at', { ascending: false })
-            .limit(1);
+          // Fetch associated chat session — try localStorage first, then keyword match, then most recent
+          const localChatId = localStorage.getItem(`chat_for_${id}`);
+          if (localChatId) {
+            setAssociatedChatId(localChatId);
+          } else {
+            const searchTerms = id.replace(/-/g, ' ').split(' ').filter((w: string) => w.length > 3);
+            let chatId: string | null = null;
 
-          if (chatData && chatData.length > 0) {
-            setAssociatedChatId(chatData[0].id);
+            // Try each significant word from the slug until we find a match
+            for (const term of searchTerms) {
+              const { data: chatData } = await supabase
+                .from('chat')
+                .select('id')
+                .eq('user_id', user.id)
+                .ilike('title', `%${term}%`)
+                .order('created_at', { ascending: false })
+                .limit(1);
+              if (chatData && chatData.length > 0) {
+                chatId = chatData[0].id;
+                break;
+              }
+            }
+
+            // Final fallback: use the most recently created chat session
+            if (!chatId) {
+              const { data: latestChat } = await supabase
+                .from('chat')
+                .select('id')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+              if (latestChat && latestChat.length > 0) chatId = latestChat[0].id;
+            }
+
+            if (chatId) setAssociatedChatId(chatId);
           }
+
         }
       } catch (err) {
         console.error("Supabase fetch error:", err);
@@ -360,7 +387,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
         </div>
       </main>
 
-      {associatedChatId && <FloatingChat chatId={associatedChatId} />}
+      {associatedChatId && <FloatingChat chatId={associatedChatId} roadmapTopic={data?.title} roadmapId={roadmapId ?? undefined} />}
 
       <Footer />
     </div>

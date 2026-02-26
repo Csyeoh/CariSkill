@@ -228,6 +228,8 @@ function ChatContent() {
 
                         if (readyToGenerate && topic) {
                             setTimeout(() => {
+                                const skillSlug = topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
+                                localStorage.setItem(`chat_for_${skillSlug}`, selectedChatId);
                                 router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
                             }, 1500);
                         }
@@ -297,6 +299,8 @@ function ChatContent() {
 
             if (readyToGenerate && topic) {
                 setTimeout(() => {
+                    const skillSlug = topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
+                    localStorage.setItem(`chat_for_${skillSlug}`, selectedChatId);
                     router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
                 }, 1500);
             }
