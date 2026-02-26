@@ -3,11 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, Sparkles, Brain, Lightbulb,
-  GraduationCap, BookOpen, Loader2
+  GraduationCap
 } from 'lucide-react';
 
 const messages = [
@@ -20,15 +20,18 @@ const messages = [
 
 function LoadingRoadmapContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const topic = searchParams.get('topic') || "Skill";
+  const [topic, setTopic] = useState("");
 
   const [messageIndex, setMessageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const topic = searchParams.get('topic') || "skill";
-    const skillId = topic.toLowerCase().replace(/ /g, '-');
+    // Read from localStorage without searchParams
+    const payloadStr = localStorage.getItem('generation_payload');
+    const payload = payloadStr ? JSON.parse(payloadStr) : {};
+    const activeTopic = payload.topic || "";
+    setTopic(activeTopic);
+    const skillId = activeTopic.toLowerCase().replace(/ /g, '-');
 
     const messageInterval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % messages.length);
@@ -40,21 +43,31 @@ function LoadingRoadmapContent() {
 
     const generateRoadmap = async () => {
       try {
-        const workerUrl = process.env.NEXT_PUBLIC_AI_WORKER_URL || 'http://localhost:8080';
-        const response = await fetch(`${workerUrl}/api/generate-roadmap`, {
+        const payloadStr = localStorage.getItem('generation_payload');
+        const payload = payloadStr ? JSON.parse(payloadStr) : {};
+        const activeTopic = payload.topic || "";
+        const experience = payload.experience || "Beginner";
+        const goal = payload.goal || "None";
+        const constraints = payload.constraints || "None";
+        const sessionId = payload.session_id || `temp-${Date.now()}`;
+
+        const workerUrl = 'http://localhost:8000';
+        const response = await fetch(`${workerUrl}/api/start_macro`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            topic: topic,
-            experience: searchParams.get('experience') || "Beginner",
-            requirements: searchParams.get('requirements') || "None"
+            session_id: sessionId,
+            topic: activeTopic,
+            experience: experience,
+            goal: goal,
+            constraints: constraints
           })
         });
 
         if (!response.ok) {
           const text = await response.text();
-          console.error(`AI Worker Failed with status ${response.status}: ${text}`);
-          throw new Error('Failed to generate roadmap');
+          console.error(`Master Flow API Failed with status ${response.status}: ${text}`);
+          throw new Error('Failed to start master flow');
         }
 
         const rawResult = await response.json();
@@ -65,14 +78,9 @@ function LoadingRoadmapContent() {
           throw new Error(rawResult.message || "The AI generated an invalid response.");
         }
 
-        // At this point we have the raw result, now we need to save it.
-        // For right now, let's just dump it into localStorage directly so the UI can render it.
-        // We will wire this to Supabase in the next step.
-
         let parsedRoadmap;
         try {
-          // Sometimes the backend's roadmap key contains another roadmap key due to LLM structure
-          const targetPayload = rawResult.roadmap?.roadmap || rawResult.roadmap || rawResult;
+          const targetPayload = rawResult.state?.blueprint || rawResult.roadmap?.roadmap || rawResult.roadmap || rawResult;
           parsedRoadmap = typeof targetPayload === 'string'
             ? JSON.parse(targetPayload)
             : targetPayload;
@@ -146,7 +154,7 @@ function LoadingRoadmapContent() {
       clearInterval(messageInterval);
       clearInterval(progressInterval);
     };
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF6] font-sans text-gray-900 overflow-hidden">

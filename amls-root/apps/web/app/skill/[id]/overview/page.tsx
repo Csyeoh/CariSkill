@@ -110,6 +110,8 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             learningPathData = parsed.roadmap.learning_path;
           } else if (parsed?.modules && Array.isArray(parsed.modules)) {
             learningPathData = parsed.modules;
+          } else if (parsed?.nodes && Array.isArray(parsed.nodes)) {
+            learningPathData = parsed.nodes;
           } else if (parsed && typeof parsed.error_unparsed_raw_text === 'string') {
             // Handle the specific database fallback case where the LLM generated raw conversation
             learningPathData = [{
@@ -145,12 +147,12 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             welcomeMessage: "Welcome! Your specialized AI roadmap has been forged.",
             quote: { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
             modules: learningPathData.map((step: any, idx: number) => ({
-              id: step?.id || `m${idx + 1}`,
+              id: step?.id || step?.node_id || `m${idx + 1}`,
               title: step?.skill || step?.title || `Phase ${idx + 1}`,
-              description: step?.obj || step?.description || step?.content || "Learn the concepts to master this step.",
+              description: step?.obj || step?.description || step?.content || step?.rationale || "Learn the concepts to master this step.",
               duration: step?.duration,
               obj: step?.obj,
-              items: step?.items || [],
+              items: step?.items || step?.suggested_micro_topics || [],
               status: idx === 0 ? 'current' : 'locked' // First module is current, rest locked
             }))
           };

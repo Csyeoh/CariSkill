@@ -144,7 +144,7 @@ export default function FloatingChat({ chatId, roadmapTopic, roadmapId }: { chat
                 });
             }
 
-            const response = await fetch('/api/chat', {
+            const response = await fetch('/api/chat/roadmap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

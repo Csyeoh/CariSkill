@@ -7,7 +7,8 @@ export const exploreData = {
   hero: {
     analyseTitle: "Analyse Skill",
     analyseDesc: "Upload resume or job ad to find gaps",
-    newSkillTitle: "New Skill"
+    newSkillTitle: "New Skill",
+    newSkillDesc: "Start from scratch and generate a custom roadmap"
   },
   suggestionsTitle: "Suggestions For You",
   suggestions: [
@@ -21,29 +22,29 @@ export const exploreData = {
   ],
   popularTitle: "Popular Now",
   popularSkills: [
-    { 
-      id: "p1", title: "Data Science", desc: "Master data analysis and visualization techniques.", 
-      learners: "12k", icon: BarChart2 
+    {
+      id: "p1", title: "Data Science", desc: "Master data analysis and visualization techniques.",
+      learners: "12k", icon: BarChart2
     },
-    { 
-      id: "p2", title: "Cybersecurity", desc: "Protect systems and networks from digital attacks.", 
-      learners: "8.5k", icon: Shield 
+    {
+      id: "p2", title: "Cybersecurity", desc: "Protect systems and networks from digital attacks.",
+      learners: "8.5k", icon: Shield
     },
-    { 
-      id: "p3", title: "UX Design", desc: "Create intuitive and user-friendly interfaces.", 
-      learners: "15k", icon: PenTool 
+    {
+      id: "p3", title: "UX Design", desc: "Create intuitive and user-friendly interfaces.",
+      learners: "15k", icon: PenTool
     },
-    { 
-      id: "p4", title: "AI Ethics", desc: "Understanding the moral implications of AI.", 
-      learners: "5k", icon: Cpu 
+    {
+      id: "p4", title: "AI Ethics", desc: "Understanding the moral implications of AI.",
+      learners: "5k", icon: Cpu
     },
-    { 
-      id: "p5", title: "Cloud Computing", desc: "Learn AWS, Azure, and Cloud fundamentals.", 
-      learners: "10k", icon: Cloud 
+    {
+      id: "p5", title: "Cloud Computing", desc: "Learn AWS, Azure, and Cloud fundamentals.",
+      learners: "10k", icon: Cloud
     },
-    { 
-      id: "p6", title: "Mobile Dev", desc: "Build native iOS and Android applications.", 
-      learners: "18k", icon: Smartphone 
+    {
+      id: "p6", title: "Mobile Dev", desc: "Build native iOS and Android applications.",
+      learners: "18k", icon: Smartphone
     },
   ]
 };

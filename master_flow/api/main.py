@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 # Load the environment variables from the .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -23,16 +23,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ChatRequest(BaseModel):
-    session_id: Optional[str] = None
-    message: str
 
-from fastapi import FastAPI, HTTPException
 
-@app.post("/api/chat")
-async def chat_endpoint(req: ChatRequest):
+class StartMacroRequest(BaseModel):
+    session_id: str
+    topic: str
+    experience: str
+    goal: str
+    constraints: str
+
+@app.post("/api/start_macro")
+async def start_macro_endpoint(req: StartMacroRequest):
     if not req.session_id:
-        raise HTTPException(status_code=400, detail="session_id is required to initiate or continue a flow.")
+        raise HTTPException(status_code=400, detail="session_id is required.")
         
     flow = MasterFlow()
     
@@ -48,19 +51,18 @@ async def chat_endpoint(req: ChatRequest):
             if hasattr(flow.state, key):
                 setattr(flow.state, key, value)
     
-    # Explicitly enforce the ID so that future persists overwrite this same session
+    # Initialize the state explicitly with the requested macro fields
     flow.state.id = req.session_id
+    flow.state.topic = req.topic
+    flow.state.experience = req.experience
+    flow.state.goal = req.goal
+    flow.state.constraints = req.constraints
     
-    # Update the user's latest incoming message
-    flow.state.latest_user_message = req.message
-    
-    print(f"Running flow for session {flow.state.id} with message: {req.message}")
+    print(f"Starting macro flow for session {flow.state.id} with topic: {req.topic}")
     result = await flow.kickoff_async() 
     
-    # Extract response from flow result if it's chatting
     response_data = result if isinstance(result, dict) else {"status": "completed", "result": result}
     
-    # Return the state ID so the client can pass it back next time
     return {
         "response": response_data,
         "state": flow.state.model_dump(),

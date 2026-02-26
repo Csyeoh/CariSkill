@@ -3,15 +3,26 @@ import json
 from crewai.tools import tool
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
-
-
-# Initialize clients globally so they don't reload on every tool call
-qdrant_client = QdrantClient(
-    url=os.getenv("QDRANT_URL"),
-    api_key=os.getenv("QDRANT_API_KEY")
-)
-embedding_model = SentenceTransformer('BAAI/bge-small-en-v1.5')
 from tavily import TavilyClient
+
+# We use a getter for clients to avoid crushing the process if env vars are missing at startup
+_qdrant_client = None
+_embedding_model = None
+
+def get_qdrant_client():
+    global _qdrant_client
+    if _qdrant_client is None:
+        _qdrant_client = QdrantClient(
+            url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+            api_key=os.getenv("QDRANT_API_KEY", "")
+        )
+    return _qdrant_client
+
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer('BAAI/bge-small-en-v1.5')
+    return _embedding_model
 
 @tool("Web Syllabus Search")
 def web_syllabus_search(skill: str) -> str:
@@ -43,67 +54,62 @@ def web_syllabus_search(skill: str) -> str:
     except Exception as e:
         return f"Error retrieving web results for {skill_query}: {e}"
 
-@tool("Find Resource Links")
-def find_resource_links(topic: str) -> str:
-    """Searches the web for high-quality, free tutorials, interactive courses, or guides for a highly specific learning topic (e.g., 'Python Variables tutorial')."""
-    topic_query = topic.get("topic", topic) if isinstance(topic, dict) else topic
+# @tool("Find Resource Links")
+# def find_resource_links(topic: str) -> str:
+#     """Searches the web for high-quality, free tutorials, interactive courses, or guides for a highly specific learning topic (e.g., 'Python Variables tutorial')."""
+#     topic_query = topic.get("topic", topic) if isinstance(topic, dict) else topic
     
-    tavily_key = os.getenv("TAVILY_API_KEY")
-    if not tavily_key:
-        return "ERROR: TAVILY_API_KEY is not set."
+#     tavily_key = os.getenv("TAVILY_API_KEY")
+#     if not tavily_key:
+#         return "ERROR: TAVILY_API_KEY is not set."
         
-    try:
-        tavily = TavilyClient(api_key=tavily_key)
-        response = tavily.search(query=f"Best free online tutorial, guide, or interactive course for {topic_query} 2026", search_depth="basic", max_results=3)
+#     try:
+#         tavily = TavilyClient(api_key=tavily_key)
+#         response = tavily.search(query=f"Best free online tutorial, guide, or interactive course for {topic_query} 2026", search_depth="basic", max_results=3)
         
-        if not response or not response.get("results"):
-            return f"No related tutorials found for {topic_query}."
+#         if not response or not response.get("results"):
+#             return f"No related tutorials found for {topic_query}."
             
-        formatted_results = [f"Found the following top resources for {topic_query}:"]
+#         formatted_results = [f"Found the following top resources for {topic_query}:"]
         
-        for result in response["results"]:
-            title = result.get("title", "Unknown Title")
-            url = result.get("url", "")
-            formatted_results.append(f"- {title}: {url}")
+#         for result in response["results"]:
+#             title = result.get("title", "Unknown Title")
+#             url = result.get("url", "")
+#             formatted_results.append(f"- {title}: {url}")
             
-        return "\n".join(formatted_results)
-    except Exception as e:
-        return f"Error retrieving resources for {topic_query}: {e}"
+#         return "\n".join(formatted_results)
+#     except Exception as e:
+#         return f"Error retrieving resources for {topic_query}: {e}"
 
 @tool("Qdrant Syllabus Search")
 def search_syllabi(query: str) -> str:
     """Searches the Qdrant database for top course syllabi matching the skill query."""
-    vector = embedding_model.encode(query).tolist()
-    results = qdrant_client.query_points(
-        collection_name="course_materials",
-        query=vector,
-        limit=5
-    ).points
+    query_str = query.get("query", query) if isinstance(query, dict) else query
+    
+    try:
+        model = get_embedding_model()
+        client = get_qdrant_client()
+        
+        vector = model.encode(query_str).tolist()
+        results = client.query_points(
+            collection_name="course_materials",
+            query=vector,
+            limit=5
+        ).points
 
-    formatted_results = []
-    for res in results:
-        # Only accept highly confident matches! Adjust the threshold based on your model's typical scores.
-        if hasattr(res, 'score') and res.score < 0.70:
-            continue
+        formatted_results = []
+        for res in results:
+            # Only accept highly confident matches! Adjust the threshold based on your model's typical scores.
+            if hasattr(res, 'score') and res.score < 0.60:
+                continue
+                
+            # Note: mapping 'course_name' based on vector_store payload, or default to 'name'
+            name_val = res.payload.get('course_name') or res.payload.get('name')
+            formatted_results.append(f"Course: {name_val}\nLevel: {res.payload.get('level')}\nSyllabus: {res.payload.get('text')}")
             
-        # Note: mapping 'course_name' based on vector_store payload, or default to 'name'
-        name_val = res.payload.get('course_name') or res.payload.get('name')
-        formatted_results.append(f"Course: {name_val}\nLevel: {res.payload.get('level')}\nSyllabus: {res.payload.get('text')}")
-        
-    if not formatted_results:
-        return "ERROR_NOT_FOUND: The local database does not contain this skill. You MUST use the 'Web Syllabus Search' tool instead."
-        
-    return "\n\n---\n\n".join(formatted_results)
-
-@tool("Roadmap JSON Structurer")
-def format_roadmap_json(raw_text: str) -> str:
-    """Forces raw syllabus text into a structured JSON micro-learning roadmap."""
-    # In a full implementation, this might do additional regex or parsing
-    # For now, it signals the LLM to strictly format its output.
-    return "Ensure your final response is strictly valid JSON matching the UI Node schema."
-
-@tool("Prerequisite Validator")
-def validate_prerequisites(roadmap_json: str) -> str:
-    """Analyzes a JSON roadmap to ensure foundational skills are not skipped."""
-    # This is where the Critic Agent will pass the roadmap for QA
-    return "Validation complete. No missing prerequisites detected."
+        if not formatted_results:
+            return "ERROR_NOT_FOUND: The local database does not contain this skill or no high-confidence match. You MUST use the 'Web Syllabus Search' tool instead."
+            
+        return "\n\n---\n\n".join(formatted_results)
+    except Exception as e:
+        return f"ERROR_DATABASE_FAILURE: Qdrant database error: {e}. You MUST fall back to using the 'Web Syllabus Search' tool immediately."

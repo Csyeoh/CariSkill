@@ -2,6 +2,7 @@ import os
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from master_flow.model.macro_models import QAEvaluation
+from master_flow.model.macro_models import Blueprint
 from master_flow.tools.search_tools import search_syllabi, web_syllabus_search
 
 @CrewBase
@@ -39,7 +40,8 @@ class MacroPlanningCrew():
     @task
     def blueprint_task(self) -> Task:
         return Task(
-            config=self.tasks_config['blueprint_task']
+            config=self.tasks_config['blueprint_task'],
+            output_pydantic=Blueprint
         )
 
     @task

@@ -1,68 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { History, Bot, User, Send, Compass } from 'lucide-react';
+import { History, Bot, User, Send, Compass, Info, ArrowRight } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/components/AuthProvider';
-import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// Lightweight markdown renderer — no external dependency
-function MarkdownText({ content }: { content: string }) {
-    const lines = content.split('\n');
-    const elements: React.ReactNode[] = [];
-
-    const renderInline = (text: string, key: string): React.ReactNode => {
-        const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
-        return parts.map((part, i) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={`${key}-b${i}`} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
-            } else if (part.startsWith('*') && part.endsWith('*')) {
-                return <em key={`${key}-em${i}`} className="italic text-gray-600">{part.slice(1, -1)}</em>;
-            } else if (part.startsWith('`') && part.endsWith('`')) {
-                return <code key={`${key}-c${i}`} className="bg-gray-100 px-1 rounded text-sm font-mono">{part.slice(1, -1)}</code>;
-            }
-            return part;
-        });
-    };
-
-    let i = 0;
-    while (i < lines.length) {
-        const line = lines[i];
-        if (line.match(/^[-*•]\s/)) {
-            const listItems: string[] = [];
-            while (i < lines.length && lines[i].match(/^[-*•]\s/)) {
-                listItems.push(lines[i].replace(/^[-*•]\s/, ''));
-                i++;
-            }
-            elements.push(
-                <ul key={`ul-${i}`} className="list-disc pl-5 my-1 space-y-0.5">
-                    {listItems.map((item, idx) => (
-                        <li key={idx} className="text-[15px]">{renderInline(item, `li-${i}-${idx}`)}</li>
-                    ))}
-                </ul>
-            );
-        } else if (line.match(/^#+\s/)) {
-            const headingText = line.replace(/^#+\s/, '');
-            elements.push(<p key={`h-${i}`} className="font-semibold text-gray-900 mb-1">{headingText}</p>);
-            i++;
-        } else if (line.trim() === '') {
-            i++;
-        } else {
-            elements.push(<p key={`p-${i}`} className="mb-1.5">{renderInline(line, `p-${i}`)}</p>);
-            i++;
-        }
-    }
-    return <>{elements}</>;
-}
-
-interface ChatRecord {
-    id: string;
-    created_at: string;
-    title: string;
-    user_id: string;
-}
+import MarkdownText from '@/components/chat/MarkdownText';
+import ChatEmptyState from '@/components/chat/ChatEmptyState';
 
 interface MessageRecord {
     id: string;
@@ -70,7 +16,6 @@ interface MessageRecord {
     role: 'user' | 'ai';
     content: string;
     type: string;
-    chat_id: string;
 }
 
 export default function ChatPage() {
@@ -83,113 +28,77 @@ export default function ChatPage() {
 
 function ChatContent() {
     const { user, isLoading: authLoading } = useAuth();
-    const supabase = createClient();
     const router = useRouter();
     const searchParams = useSearchParams();
     const specificChatId = searchParams.get('id');
 
-    const [chats, setChats] = useState<ChatRecord[]>([]);
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [messages, setMessages] = useState<MessageRecord[]>([]);
-    const [loadingChats, setLoadingChats] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
 
     const [inputMessage, setInputMessage] = useState("");
     const [isSending, setIsSending] = useState(false);
+    const [generationData, setGenerationData] = useState<{ topic: string, experience: string, goal?: string, constraints?: string } | null>(null);
     const initialTriggerRef = useRef<Set<string>>(new Set());
 
-    // Fetch Chats
+    // Secure the route
     useEffect(() => {
-        if (authLoading) return;
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/login');
-            return;
         }
-
-        const fetchChats = async () => {
-            setLoadingChats(true);
-            const { data, error } = await supabase
-                .from('chat')
-                .select('id, created_at, title, user_id')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (!error && data && data.length > 0) {
-                setChats(data);
-            } else {
-                setChats([]);
-            }
-            setLoadingChats(false);
-        };
-
-        fetchChats();
-    }, [user, authLoading, router, supabase]);
+    }, [user, authLoading, router]);
 
     // Handle Active Chat Selection
     useEffect(() => {
-        if (chats.length > 0) {
-            const validSpecificId = specificChatId && chats.some(c => c.id === specificChatId);
-            const desiredId = validSpecificId ? specificChatId : chats[0].id;
-
-            if (selectedChatId !== desiredId) {
-                setSelectedChatId(desiredId);
-                // Help sync the url if there wasn't one at all
-                if (!validSpecificId) {
-                    router.replace(`/chat?id=${desiredId}`);
-                }
-            }
+        if (specificChatId && specificChatId !== selectedChatId) {
+            setSelectedChatId(specificChatId);
+        } else if (!specificChatId) {
+            // Need an ID to continue
+            router.push('/setup');
         }
-    }, [chats, specificChatId, router, selectedChatId]);
+    }, [specificChatId, router, selectedChatId]);
 
-    // Fetch Messages when selected chat changes
+    // Load Local Messages
     useEffect(() => {
         if (!selectedChatId) return;
 
-        const fetchMessages = async () => {
-            setLoadingMessages(true);
-            const { data, error } = await supabase
-                .from('messages')
-                .select('id, created_at, role, content, type, chat_id')
-                .eq('chat_id', selectedChatId)
-                .order('created_at', { ascending: true });
+        setLoadingMessages(true);
+        const storedMessages = localStorage.getItem(`chat_messages_${selectedChatId}`);
+        const initialTopic = localStorage.getItem(`chat_initial_topic_${selectedChatId}`);
+        const storedGenData = localStorage.getItem(`chat_generation_${selectedChatId}`);
 
-            if (!error && data) {
-                setMessages(data);
-            } else {
-                if (error) console.error("Error fetching messages:", error);
-                setMessages([]);
-            }
-            setLoadingMessages(false);
-        };
+        if (storedGenData) {
+            try {
+                setGenerationData(JSON.parse(storedGenData));
+            } catch (e) { }
+        }
 
-        fetchMessages();
+        if (storedMessages) {
+            setMessages(JSON.parse(storedMessages));
+        } else if (initialTopic) {
+            const initialUserMessage: MessageRecord = {
+                id: crypto.randomUUID(),
+                created_at: new Date().toISOString(),
+                role: 'user',
+                content: initialTopic,
+                type: 'text'
+            };
+            setMessages([initialUserMessage]);
+            localStorage.setItem(`chat_messages_${selectedChatId}`, JSON.stringify([initialUserMessage]));
+            // Clear initial topic so we don't duplicate it
+            localStorage.removeItem(`chat_initial_topic_${selectedChatId}`);
+        } else {
+            console.warn("No active topic or history found for this session ID.");
+            router.push('/setup');
+        }
+        setTimeout(() => setLoadingMessages(false), 1000);
+    }, [selectedChatId, router]);
 
-        // Subscribe to real-time changes so AI messages appear automatically
-        const channel = supabase
-            .channel(`messages_${selectedChatId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `chat_id=eq.${selectedChatId}`
-                },
-                (payload) => {
-                    const newMsg = payload.new as MessageRecord;
-                    setMessages((prev) => {
-                        // Prevent duplicates
-                        if (prev.some((m) => m.id === newMsg.id)) return prev;
-                        return [...prev, newMsg];
-                    });
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [selectedChatId, supabase]);
+    // Helper to update state and localStorage together
+    const saveMessages = (newMessages: MessageRecord[], chatId: string) => {
+        setMessages(newMessages);
+        localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(newMessages));
+    };
 
     // Auto-trigger API for fresh chats directly from /setup
     useEffect(() => {
@@ -201,7 +110,7 @@ function ChatContent() {
 
             const triggerInitialAI = async () => {
                 try {
-                    const response = await fetch('/api/chat', {
+                    const response = await fetch('/api/chat/setup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ session_id: selectedChatId, message: messages[0].content, history: messages })
@@ -213,25 +122,29 @@ function ChatContent() {
                         const readyToGenerate = data.response?.ready_to_generate;
                         const topic = data.response?.topic;
 
-                        const { data: insertedMsg, error: insertAiError } = await supabase
-                            .from('messages')
-                            .insert([{ chat_id: selectedChatId, role: 'ai', content: aiReply, type: 'text' }])
-                            .select()
-                            .single();
+                        const aiReplyMsg: MessageRecord = {
+                            id: crypto.randomUUID(),
+                            created_at: new Date().toISOString(),
+                            role: 'ai',
+                            content: aiReply,
+                            type: 'text'
+                        };
 
-                        if (!insertAiError && insertedMsg) {
-                            setMessages(prev => {
-                                if (prev.some(m => m.id === insertedMsg.id)) return prev;
-                                return [...prev, insertedMsg];
-                            });
-                        }
+                        setMessages(prev => {
+                            const newMsgs = [...prev, aiReplyMsg];
+                            localStorage.setItem(`chat_messages_${selectedChatId}`, JSON.stringify(newMsgs));
+                            return newMsgs;
+                        });
 
                         if (readyToGenerate && topic) {
-                            setTimeout(() => {
-                                const skillSlug = topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
-                                localStorage.setItem(`chat_for_${skillSlug}`, selectedChatId);
-                                router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
-                            }, 1500);
+                            const newGenData = {
+                                topic,
+                                experience: data.response?.experience || 'Beginner',
+                                goal: data.response?.goal || 'No specific goal',
+                                constraints: data.response?.constraints || 'None specified'
+                            };
+                            setGenerationData(newGenData);
+                            localStorage.setItem(`chat_generation_${selectedChatId}`, JSON.stringify(newGenData));
                         }
                     }
                 } catch (error) {
@@ -242,7 +155,7 @@ function ChatContent() {
             };
             triggerInitialAI();
         }
-    }, [messages, selectedChatId, loadingMessages, supabase]);
+    }, [messages, selectedChatId, loadingMessages, router]);
 
     const handleSendMessage = async () => {
         if (!inputMessage.trim() || !selectedChatId || isSending) return;
@@ -252,26 +165,21 @@ function ChatContent() {
         setIsSending(true);
 
         try {
-            const { data: insertedUserMsg, error: insertError } = await supabase
-                .from('messages')
-                .insert([{ chat_id: selectedChatId, role: 'user', content: currentMsg, type: 'text' }])
-                .select()
-                .single();
+            const userMsg: MessageRecord = {
+                id: crypto.randomUUID(),
+                created_at: new Date().toISOString(),
+                role: 'user',
+                content: currentMsg,
+                type: 'text'
+            };
 
-            if (insertError) throw insertError;
+            const updatedMsgsWithUser = [...messages, userMsg];
+            saveMessages(updatedMsgsWithUser, selectedChatId);
 
-            // Instantly display user message
-            if (insertedUserMsg) {
-                setMessages(prev => {
-                    if (prev.some(m => m.id === insertedUserMsg.id)) return prev;
-                    return [...prev, insertedUserMsg];
-                });
-            }
-
-            const response = await fetch('/api/chat', {
+            const response = await fetch('/api/chat/setup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: selectedChatId, message: currentMsg, history: messages })
+                body: JSON.stringify({ session_id: selectedChatId, message: currentMsg, history: updatedMsgsWithUser })
             });
 
             if (!response.ok) throw new Error(`API returned ${response.status}`);
@@ -282,27 +190,26 @@ function ChatContent() {
             const readyToGenerate = data.response?.ready_to_generate;
             const topic = data.response?.topic;
 
-            const { data: insertedAiMsg, error: aiInsertError } = await supabase
-                .from('messages')
-                .insert([{ chat_id: selectedChatId, role: 'ai', content: aiReply, type: 'text' }])
-                .select()
-                .single();
+            const aiMsg: MessageRecord = {
+                id: crypto.randomUUID(),
+                created_at: new Date().toISOString(),
+                role: 'ai',
+                content: aiReply,
+                type: 'text'
+            };
 
-            if (aiInsertError) throw aiInsertError;
-
-            if (insertedAiMsg) {
-                setMessages(prev => {
-                    if (prev.some(m => m.id === insertedAiMsg.id)) return prev;
-                    return [...prev, insertedAiMsg];
-                });
-            }
+            const finalMsgs = [...updatedMsgsWithUser, aiMsg];
+            saveMessages(finalMsgs, selectedChatId);
 
             if (readyToGenerate && topic) {
-                setTimeout(() => {
-                    const skillSlug = topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
-                    localStorage.setItem(`chat_for_${skillSlug}`, selectedChatId);
-                    router.push(`/setup/loading?topic=${encodeURIComponent(topic)}&experience=Beginner`);
-                }, 1500);
+                const newGenData = {
+                    topic,
+                    experience: data.response?.experience || 'Beginner',
+                    goal: data.response?.goal || 'No specific goal',
+                    constraints: data.response?.constraints || 'None specified'
+                };
+                setGenerationData(newGenData);
+                localStorage.setItem(`chat_generation_${selectedChatId}`, JSON.stringify(newGenData));
             }
 
         } catch (error) {
@@ -340,8 +247,8 @@ function ChatContent() {
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    // Global loading state while checking auth or loading initial chats
-    if (authLoading || loadingChats) {
+    // Global loading state while checking auth
+    if (authLoading) {
         return (
             <div className="flex flex-col h-screen bg-white overflow-hidden">
                 <Navbar isLoggedIn={!!user} />
@@ -361,6 +268,11 @@ function ChatContent() {
 
                 {/* Main Chat Area */}
                 <div className="flex-1 flex flex-col relative bg-[#FFFDF5]">
+                    {/* Top Temporary Session Banner */}
+                    <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 flex items-center justify-center gap-2 text-sm text-yellow-800 z-20 shrink-0">
+                        <Info size={16} />
+                        <span>This is a temporary chat session to tailor your roadmap. History will not be saved.</span>
+                    </div>
                     {/* Background Pattern */}
                     <div
                         className="absolute inset-0 z-0 pointer-events-none opacity-[0.15]"
@@ -381,20 +293,8 @@ function ChatContent() {
                     </div>
 
                     {/* EMPTY STATE */}
-                    {chats.length === 0 ? (
-                        <div className="flex-1 z-10 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
-                            <Compass className="w-16 h-16 text-yellow-500 mb-6 opacity-80" />
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Chats</h2>
-                            <p className="text-gray-600 mb-8 leading-relaxed">
-                                You haven't started any personalized learning flows yet! Head over to the explore page to discover new AI-guided courses or generate your own roadmaps designed precisely for you!
-                            </p>
-                            <button
-                                onClick={() => router.push('/explore')}
-                                className="bg-[#FFD900] hover:bg-yellow-400 text-black font-semibold rounded-2xl px-8 py-4 shadow-[0_4px_15px_rgba(255,215,0,0.3)] border border-black transition-transform active:scale-95"
-                            >
-                                Browse Roadmaps
-                            </button>
-                        </div>
+                    {messages.length === 0 && !loadingMessages ? (
+                        <ChatEmptyState />
                     ) : (
                         <>
                             {/* Messages Area */}
@@ -408,17 +308,47 @@ function ChatContent() {
                                     variants={chatContainerVariants}
                                     initial="hidden"
                                     animate="show"
-                                    className="flex-1 overflow-y-auto px-8 py-10 z-10 flex flex-col gap-8 max-w-5xl mx-auto w-full"
+                                    className="flex-1 overflow-y-auto px-8 py-10 z-10 flex flex-col gap-8 max-w-5xl mx-auto w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                                 >
-                                    {messages.map((message) => {
+                                    {messages.map((message, index) => {
+                                        const isLastMessage = index === messages.length - 1;
                                         if (message.role === 'ai') {
                                             return (
                                                 <motion.div key={message.id} variants={messageVariants} initial="hidden" animate="show" className="flex gap-4 items-start pr-12">
                                                     <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center shrink-0 border-2 border-transparent shadow-sm">
                                                         <Bot size={20} className="text-yellow-400" />
                                                     </div>
-                                                    <div className="bg-white rounded-2xl rounded-tl-sm shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 border border-gray-100 text-gray-700 text-[15px] leading-relaxed max-w-[85%]">
-                                                        <MarkdownText content={message.content} />
+                                                    <div className="bg-white rounded-2xl rounded-tl-sm shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 border border-gray-100 text-gray-700 text-[15px] leading-relaxed min-w-[300px] max-w-[85%]">
+                                                        {message.content && <MarkdownText content={message.content} />}
+
+                                                        {isLastMessage && generationData && (
+                                                            <div className="mt-4 flex flex-col items-center text-center p-5 bg-yellow-50/50 rounded-xl border border-yellow-100">
+                                                                <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mb-3 shadow-[0_2px_8px_rgba(250,204,21,0.2)]">
+                                                                    <Compass size={24} />
+                                                                </div>
+                                                                <h3 className="font-bold text-gray-900 mb-1 text-lg">Ready to Generate</h3>
+                                                                <p className="text-[14px] text-gray-600 mb-5 leading-relaxed">
+                                                                    We have gathered enough information! Are you ready to generate your customized roadmap for <strong className="text-black">{generationData.topic}</strong>?
+                                                                </p>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const skillSlug = generationData.topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
+                                                                        localStorage.setItem(`chat_for_${skillSlug}`, selectedChatId!);
+                                                                        localStorage.setItem('generation_payload', JSON.stringify({
+                                                                            topic: generationData.topic,
+                                                                            experience: generationData.experience,
+                                                                            goal: generationData.goal,
+                                                                            constraints: generationData.constraints,
+                                                                            session_id: selectedChatId
+                                                                        }));
+                                                                        router.push(`/setup/loading`);
+                                                                    }}
+                                                                    className="w-full h-12 bg-[#FFD900] hover:bg-yellow-400 transition-colors rounded-xl font-bold flex items-center justify-center gap-2 text-black shadow-sm"
+                                                                >
+                                                                    Generate My Roadmap! <ArrowRight size={18} />
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </motion.div>
                                             );

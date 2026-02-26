@@ -1,1 +1,0 @@
-"""Requirement elicitation crew template"""

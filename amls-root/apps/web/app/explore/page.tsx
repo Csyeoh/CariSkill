@@ -175,7 +175,7 @@ export default function ExplorePage() {
 
         <div className="w-full max-w-7xl mx-auto z-10">
 
-          <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6 mb-24 relative">
+          <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-24 relative">
             <button
               onClick={() => router.push('/analyse')}
               className="w-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 rounded-3xl p-6 md:p-8 flex items-center justify-between shadow-lg shadow-[#FFD700]/20 transition-all active:scale-95 group border-2 border-[#FFD700]"
@@ -195,12 +195,19 @@ export default function ExplorePage() {
 
             <Link
               href="/setup"
-              className="bg-white hover:bg-gray-50 text-gray-900 rounded-2xl px-8 py-4 flex items-center justify-center gap-3 border border-gray-200 font-bold shadow-sm transition-all active:scale-95 hover:shadow-md hover:border-[#FFD700]/50 group"
+              className="w-full bg-[#FFFBEB] hover:bg-[#FEF3C7] text-gray-900 rounded-3xl p-6 md:p-8 flex items-center justify-between shadow-lg shadow-[#FEF3C7]/40 transition-all active:scale-95 group border-2 border-[#FDE68A]"
             >
-              <div className="bg-[#FFD700] rounded-full p-1.5 flex items-center justify-center group-hover:rotate-90 transition-transform">
-                <Plus className="w-4 h-4 text-gray-900 stroke-[3]" />
+              <div className="text-left">
+                <h3 className="font-display font-bold text-xl md:text-2xl mb-1 group-hover:translate-x-1 transition-transform">
+                  {exploreData.hero.newSkillTitle}
+                </h3>
+                <p className="text-sm font-medium text-gray-700">
+                  {exploreData.hero.newSkillDesc}
+                </p>
               </div>
-              {exploreData.hero.newSkillTitle}
+              <div className="bg-white p-3 md:p-4 rounded-2xl group-hover:scale-110 group-hover:-rotate-3 transition-transform shadow-sm border border-[#FDE68A]">
+                <Plus className="w-6 h-6 md:w-8 md:h-8 text-[#D97706] stroke-[2.5]" />
+              </div>
             </Link>
           </div>
 
