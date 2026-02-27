@@ -9,21 +9,6 @@ import { Network, PlusCircle } from 'lucide-react';
 import FlowGraph from '@/components/FlowGraph';
 
 export default function ProgressPage() {
-  const [isJingen, setIsJingen] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { createClient } = await import('@/utils/supabase/client');
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user?.email === 'jingen@gmail.com') {
-        setIsJingen(true);
-      }
-    };
-    checkAuth();
-  }, []);
-
 
 
   return (
@@ -42,18 +27,11 @@ export default function ProgressPage() {
           </motion.h1>
         </div>
 
-        <div className="relative w-full max-w-6xl mx-auto px-4 z-10 mt-8">
+        <div className="relative w-full max-w-6xl mx-auto px-4 z-10">
 
-          {!isJingen ? (
-            <div className="text-center mt-12 mb-20">
-              <p className="text-xl text-gray-400 font-medium">You haven&apos;t started any skill tracks yet.</p>
-              <p className="text-gray-400 mt-2">Generate a new roadmap to begin your journey!</p>
-            </div>
-          ) : (
-            <div className="w-full mt-8 animate-in fade-in zoom-in duration-500">
-              <FlowGraph />
-            </div>
-          )}
+          <div className="w-full mt-2 animate-in fade-in zoom-in duration-500">
+            <FlowGraph />
+          </div>
         </div>
 
         <motion.div

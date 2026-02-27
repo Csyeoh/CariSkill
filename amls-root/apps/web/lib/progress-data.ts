@@ -2,191 +2,285 @@
 import { Node, Edge } from '@xyflow/react';
 
 export type NodeStatus = 'completed' | 'progress' | 'locked';
-export type NodeType = 'root' | 'category' | 'skill' | 'topic';
+export type NodeType = 'user' | 'category' | 'tech' | 'level1' | 'level2' | 'level3';
 
 export type ProgressNodeData = {
   label: string;
   icon?: string;
   status: NodeStatus;
   type: NodeType;
-  color?: string; // used for categories e.g. 'blue', 'pink'
+  color?: string;
   percentage?: string;
   isCollapsible?: boolean;
   isCollapsed?: boolean;
 };
 
-// Based on the user's sketch 
+// We assign a default position of { x: 0, y: 0 }, dagre will overwrite these
 export const initialNodes: Node<ProgressNodeData>[] = [
-  // --- ROOT ---
+  // --- ROOT (The User) ---
   {
-    id: 'root',
-    position: { x: 400, y: 700 }, // Placed at the bottom-center
-    data: { label: '', icon: 'Crown', status: 'completed', type: 'root', color: '#ffeb3b' },
+    id: 'user',
+    position: { x: 0, y: 0 },
+    data: { label: 'Me', icon: 'Crown', status: 'completed', type: 'user', color: '#ffeb3b' },
     type: 'progressNode',
   },
 
-  // --- PINK BRANCH (Category 2) ---
+  // --- CATEGORY ---
   {
-    id: 'cat-pink',
-    position: { x: 400, y: 850 },
-    data: { label: '', status: 'locked', type: 'category', color: '#ffb3e6' },
-    type: 'progressNode',
-  },
-  {
-    id: 'skill-pink-1',
-    position: { x: 250, y: 850 },
-    data: { label: '', status: 'locked', type: 'skill', color: '#ffb3e6' },
-    type: 'progressNode',
-  },
-  {
-    id: 'skill-pink-2',
-    position: { x: 550, y: 800 },
-    data: { label: '', status: 'locked', type: 'skill', color: '#ffb3e6' },
-    type: 'progressNode',
-  },
-  {
-    id: 'skill-pink-3',
-    position: { x: 450, y: 950 },
-    data: { label: '', status: 'locked', type: 'skill', color: '#ffb3e6' },
+    id: 'category-tech',
+    position: { x: 0, y: 0 },
+    data: { label: 'Tech / Code', icon: 'Code', status: 'completed', type: 'category', color: '#4da6ff' },
     type: 'progressNode',
   },
 
-  // --- BLUE BRANCH (Tech / Category 1) ---
+  // --- TECH BRANCH 1: Python ---
   {
-    id: 'cat-tech',
-    position: { x: 400, y: 550 },
-    data: { label: 'Tech', status: 'completed', type: 'category', color: '#4da6ff' },
+    id: 'tech-python',
+    position: { x: 0, y: 0 },
+    data: { label: 'Python', status: 'completed', type: 'tech', color: '#4da6ff', isCollapsible: true, isCollapsed: false },
     type: 'progressNode',
   },
 
-  // Skills under Tech
+  // Python Level 1
   {
-    id: 'skill-ml',
-    position: { x: 250, y: 450 },
-    data: { label: 'ML', status: 'completed', type: 'skill', color: '#4da6ff', isCollapsible: true, isCollapsed: true },
+    id: 'py-lvl1-syntax',
+    position: { x: 0, y: 0 },
+    data: { label: 'Basic Syntax', status: 'completed', type: 'level1', color: '#4da6ff' },
     type: 'progressNode',
   },
   {
-    id: 'skill-python',
-    position: { x: 400, y: 400 },
-    data: { label: 'Python', status: 'progress', type: 'skill', color: '#4da6ff', percentage: '60%' },
+    id: 'py-lvl1-func',
+    position: { x: 0, y: 0 },
+    data: { label: 'Functions', status: 'completed', type: 'level1', color: '#4da6ff' },
     type: 'progressNode',
   },
   {
-    id: 'skill-ml2', // The right ML branch
-    position: { x: 550, y: 450 },
-    data: { label: 'ML', status: 'completed', type: 'skill', color: '#4da6ff', isCollapsible: true, isCollapsed: false },
-    type: 'progressNode',
-  },
-
-  // Topics under Python
-  {
-    id: 'topic-py-intro',
-    position: { x: 400, y: 250 },
-    data: { label: 'Intro', status: 'completed', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-python',
-    type: 'progressNode',
-  },
-  {
-    id: 'topic-py-func',
-    position: { x: 500, y: 150 },
-    data: { label: 'Function', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-python',
-    type: 'progressNode',
-  },
-  {
-    id: 'topic-py-etc',
-    position: { x: 300, y: 150 },
-    data: { label: '...', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-python',
-    type: 'progressNode',
-  },
-  {
-    id: 'topic-py-class',
-    position: { x: 400, y: 50 },
-    data: { label: 'Class', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-python',
+    id: 'py-lvl1-libs',
+    position: { x: 0, y: 0 },
+    data: { label: 'Libraries (Requests)', status: 'progress', type: 'level1', color: '#4da6ff', percentage: '30%' },
     type: 'progressNode',
   },
 
-  // Topics under ML2 (The expanded one on the right)
+  // Python Level 2 (Requires Syntax and Functions)
   {
-    id: 'topic-ml-intro',
-    position: { x: 650, y: 250 },
-    data: { label: 'Intro', status: 'completed', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-ml2', // Used for rendering collapse
+    id: 'py-lvl2-class',
+    position: { x: 0, y: 0 },
+    data: { label: 'Classes & OOP', status: 'progress', type: 'level2', color: '#4da6ff', percentage: '40%' },
     type: 'progressNode',
   },
   {
-    id: 'topic-ml-fund',
-    position: { x: 750, y: 400 },
-    data: { label: 'Fundamental', status: 'progress', type: 'topic', color: '#4da6ff', percentage: '30%' },
-    parent: 'skill-ml2',
+    id: 'py-lvl2-data',
+    position: { x: 0, y: 0 },
+    data: { label: 'Data Structures', status: 'locked', type: 'level2', color: '#4da6ff' },
+    type: 'progressNode',
+  },
+
+  // --- TECH BRANCH 2: C++ ---
+  {
+    id: 'tech-cpp',
+    position: { x: 0, y: 0 },
+    data: { label: 'C++', status: 'progress', type: 'tech', color: '#4da6ff', percentage: '15%', isCollapsible: true, isCollapsed: false },
+    type: 'progressNode',
+  },
+
+  // C++ Level 1
+  {
+    id: 'cpp-lvl1-pointers',
+    position: { x: 0, y: 0 },
+    data: { label: 'Pointers', status: 'progress', type: 'level1', color: '#4da6ff', percentage: '20%' },
     type: 'progressNode',
   },
   {
-    id: 'topic-ml-etc1',
-    position: { x: 900, y: 250 }, // Top
-    data: { label: '...', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-ml2',
+    id: 'cpp-lvl1-mem',
+    position: { x: 0, y: 0 },
+    data: { label: 'Memory Mgmt', status: 'locked', type: 'level1', color: '#4da6ff' },
+    type: 'progressNode',
+  },
+
+  // C++ Level 2
+  {
+    id: 'cpp-lvl2-stl',
+    position: { x: 0, y: 0 },
+    data: { label: 'STL', status: 'locked', type: 'level2', color: '#4da6ff' },
+    type: 'progressNode',
+  },
+
+  // --- TECH BRANCH 3: Java ---
+  {
+    id: 'tech-java',
+    position: { x: 0, y: 0 },
+    data: { label: 'Java', status: 'locked', type: 'tech', color: '#4da6ff', isCollapsible: true, isCollapsed: true },
+    type: 'progressNode',
+  },
+
+  // Java Level 1
+  {
+    id: 'java-lvl1-jvm',
+    position: { x: 0, y: 0 },
+    data: { label: 'JVM Basics', status: 'locked', type: 'level1', color: '#4da6ff' },
+    type: 'progressNode',
+  },
+
+  // --- CATEGORY 2: Design ---
+  {
+    id: 'category-design',
+    position: { x: 0, y: 0 },
+    data: { label: 'Design / UX', icon: 'PenTool', status: 'completed', type: 'category', color: '#ec4899' }, // Pink
+    type: 'progressNode',
+  },
+
+  // Design Skills
+  {
+    id: 'design-uiux',
+    position: { x: 0, y: 0 },
+    data: { label: 'UI/UX Basics', status: 'completed', type: 'tech', color: '#ec4899', isCollapsible: true, isCollapsed: false },
     type: 'progressNode',
   },
   {
-    id: 'topic-ml-etc2',
-    position: { x: 900, y: 400 }, // Middle
-    data: { label: '...', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-ml2',
+    id: 'design-figma',
+    position: { x: 0, y: 0 },
+    data: { label: 'Figma', status: 'progress', type: 'level1', color: '#ec4899', percentage: '60%' },
     type: 'progressNode',
   },
   {
-    id: 'topic-ml-etc3',
-    position: { x: 900, y: 550 }, // Bottom
-    data: { label: '...', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-ml2',
+    id: 'design-color',
+    position: { x: 0, y: 0 },
+    data: { label: 'Color Theory', status: 'completed', type: 'level1', color: '#ec4899' },
     type: 'progressNode',
   },
   {
-    id: 'topic-ml-adv',
-    position: { x: 1100, y: 400 },
-    data: { label: 'Advanced', status: 'locked', type: 'topic', color: '#4da6ff' },
-    parent: 'skill-ml2',
+    id: 'design-proto',
+    position: { x: 0, y: 0 },
+    data: { label: 'Prototyping', status: 'locked', type: 'level2', color: '#ec4899' },
+    type: 'progressNode',
+  },
+
+  // --- CATEGORY 3: Data Science ---
+  {
+    id: 'category-data',
+    position: { x: 0, y: 0 },
+    data: { label: 'Data Science', icon: 'Database', status: 'completed', type: 'category', color: '#10b981' }, // Green
+    type: 'progressNode',
+  },
+
+  // Data Skills
+  {
+    id: 'data-sql',
+    position: { x: 0, y: 0 },
+    data: { label: 'SQL', status: 'completed', type: 'tech', color: '#10b981', isCollapsible: true, isCollapsed: false },
+    type: 'progressNode',
+  },
+  {
+    id: 'data-pandas',
+    position: { x: 0, y: 0 },
+    data: { label: 'Pandas', status: 'progress', type: 'level1', color: '#10b981', percentage: '80%' },
+    type: 'progressNode',
+  },
+  {
+    id: 'data-viz',
+    position: { x: 0, y: 0 },
+    data: { label: 'Data Viz (Matplotlib)', status: 'progress', type: 'level1', color: '#10b981', percentage: '50%' },
+    type: 'progressNode',
+  },
+  {
+    id: 'data-ml',
+    position: { x: 0, y: 0 },
+    data: { label: 'Machine Learning', status: 'locked', type: 'level2', color: '#10b981' },
+    type: 'progressNode',
+  },
+
+  // --- CATEGORY 4: Soft Skills ---
+  {
+    id: 'category-soft',
+    position: { x: 0, y: 0 },
+    data: { label: 'Soft Skills', icon: 'Users', status: 'completed', type: 'category', color: '#f59e0b' }, // Amber
+    type: 'progressNode',
+  },
+
+  // Soft Skills
+  {
+    id: 'soft-comm',
+    position: { x: 0, y: 0 },
+    data: { label: 'Communication', status: 'completed', type: 'tech', color: '#f59e0b', isCollapsible: true, isCollapsed: false },
+    type: 'progressNode',
+  },
+  {
+    id: 'soft-agile',
+    position: { x: 0, y: 0 },
+    data: { label: 'Agile', status: 'completed', type: 'level1', color: '#f59e0b' },
+    type: 'progressNode',
+  },
+  {
+    id: 'soft-present',
+    position: { x: 0, y: 0 },
+    data: { label: 'Public Speaking', status: 'progress', type: 'level1', color: '#f59e0b', percentage: '30%' },
+    type: 'progressNode',
+  },
+  {
+    id: 'soft-lead',
+    position: { x: 0, y: 0 },
+    data: { label: 'Leadership', status: 'locked', type: 'level2', color: '#f59e0b' },
     type: 'progressNode',
   },
 ];
 
+// Reusable styling for edges that curve gently around nodes
+const edgeStyle = (color: string) => ({
+  type: 'straight', // Straight, non-curved edges
+  animated: false,
+  className: 'animate-draw-line',
+  style: { strokeWidth: 3, stroke: color },
+});
+
 export const initialEdges: Edge[] = [
-  // Root -> Categories
-  { id: 'e-root-pink', source: 'root', target: 'cat-pink', animated: true, style: { strokeWidth: 2, stroke: '#d9d9d9' } },
-  { id: 'e-root-tech', source: 'root', target: 'cat-tech', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } }, // Highlighted
+  // User -> Category
+  { id: 'e-user-category-tech', source: 'user', target: 'category-tech', ...edgeStyle('#4da6ff') },
 
-  // Category Pink -> Skills
-  { id: 'e-pink-1', source: 'cat-pink', target: 'skill-pink-1', style: { strokeWidth: 2, stroke: '#ffb3e6' } },
-  { id: 'e-pink-2', source: 'cat-pink', target: 'skill-pink-2', style: { strokeWidth: 2, stroke: '#ffb3e6' } },
-  { id: 'e-pink-3', source: 'cat-pink', target: 'skill-pink-3', style: { strokeWidth: 2, stroke: '#ffb3e6' } },
+  // Category -> Branches
+  { id: 'e-category-python', source: 'category-tech', target: 'tech-python', ...edgeStyle('#4da6ff') },
+  { id: 'e-category-cpp', source: 'category-tech', target: 'tech-cpp', ...edgeStyle('#4da6ff') },
+  { id: 'e-category-java', source: 'category-tech', target: 'tech-java', ...edgeStyle('#4da6ff') },
 
-  // Category Tech -> Skills
-  { id: 'e-tech-ml', source: 'cat-tech', target: 'skill-ml', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-tech-py', source: 'cat-tech', target: 'skill-python', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-tech-ml2', source: 'cat-tech', target: 'skill-ml2', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
+  // --- PYTHON PATH ---
+  // Tech -> Lvl 1
+  { id: 'e-py-tech-syntax', source: 'tech-python', target: 'py-lvl1-syntax', ...edgeStyle('#4da6ff') },
+  { id: 'e-py-tech-func', source: 'tech-python', target: 'py-lvl1-func', ...edgeStyle('#4da6ff') },
+  { id: 'e-py-tech-libs', source: 'tech-python', target: 'py-lvl1-libs', ...edgeStyle('#4da6ff') },
+  // Lvl 1 -> Lvl 2 (Multiple Prereqs)
+  { id: 'e-py-syntax-class', source: 'py-lvl1-syntax', target: 'py-lvl2-class', ...edgeStyle('#4da6ff') },
+  { id: 'e-py-func-class', source: 'py-lvl1-func', target: 'py-lvl2-class', ...edgeStyle('#4da6ff') },
+  { id: 'e-py-syntax-data', source: 'py-lvl1-syntax', target: 'py-lvl2-data', ...edgeStyle('#4da6ff') },
 
-  // Skill Python -> Topics
-  { id: 'e-py-intro', source: 'skill-python', target: 'topic-py-intro', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-py-func', source: 'topic-py-intro', target: 'topic-py-func', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-py-etc', source: 'topic-py-intro', target: 'topic-py-etc', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-func-class', source: 'topic-py-func', target: 'topic-py-class', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-etc-class', source: 'topic-py-etc', target: 'topic-py-class', style: { strokeWidth: 2, stroke: '#1a75ff' } },
+  // --- C++ PATH ---
+  // Tech -> Lvl 1
+  { id: 'e-cpp-tech-pointers', source: 'tech-cpp', target: 'cpp-lvl1-pointers', ...edgeStyle('#4da6ff') },
+  { id: 'e-cpp-tech-mem', source: 'tech-cpp', target: 'cpp-lvl1-mem', ...edgeStyle('#4da6ff') },
+  // Lvl 1 -> Lvl 2
+  { id: 'e-cpp-pointers-stl', source: 'cpp-lvl1-pointers', target: 'cpp-lvl2-stl', ...edgeStyle('#4da6ff') },
+  { id: 'e-cpp-mem-stl', source: 'cpp-lvl1-mem', target: 'cpp-lvl2-stl', ...edgeStyle('#4da6ff') },
 
-  // Skill ML2 -> Topics
-  { id: 'e-ml2-intro', source: 'skill-ml2', target: 'topic-ml-intro', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-ml2-fund', source: 'skill-ml2', target: 'topic-ml-fund', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
+  // --- JAVA PATH ---
+  // Tech -> Lvl 1
+  { id: 'e-java-tech-jvm', source: 'tech-java', target: 'java-lvl1-jvm', ...edgeStyle('#4da6ff') },
 
-  // Converging ML topics
-  { id: 'e-ml-intro-etc1', source: 'topic-ml-intro', target: 'topic-ml-etc1', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-ml-intro-fund', source: 'topic-ml-intro', target: 'topic-ml-fund', style: { strokeWidth: 2, stroke: '#1a75ff' } }, // DAG crosslink
-  { id: 'e-ml-fund-etc1', source: 'topic-ml-fund', target: 'topic-ml-etc1', animated: true, style: { strokeWidth: 6, stroke: '#1a75ff' } },
-  { id: 'e-ml-fund-etc2', source: 'topic-ml-fund', target: 'topic-ml-etc2', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-ml-fund-etc3', source: 'topic-ml-fund', target: 'topic-ml-etc3', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-ml-etc1-adv', source: 'topic-ml-etc1', target: 'topic-ml-adv', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-ml-etc2-adv', source: 'topic-ml-etc2', target: 'topic-ml-adv', style: { strokeWidth: 2, stroke: '#1a75ff' } },
-  { id: 'e-ml-etc3-adv', source: 'topic-ml-etc3', target: 'topic-ml-adv', style: { strokeWidth: 2, stroke: '#1a75ff' } },
+  // --- DESIGN EDGES ---
+  { id: 'e-user-cat-design', source: 'user', target: 'category-design', ...edgeStyle('#ec4899') },
+  { id: 'e-cat-design-uiux', source: 'category-design', target: 'design-uiux', ...edgeStyle('#ec4899') },
+  { id: 'e-uiux-figma', source: 'design-uiux', target: 'design-figma', ...edgeStyle('#ec4899') },
+  { id: 'e-uiux-color', source: 'design-uiux', target: 'design-color', ...edgeStyle('#ec4899') },
+  { id: 'e-figma-proto', source: 'design-figma', target: 'design-proto', ...edgeStyle('#ec4899') },
+
+  // --- DATA EDGES ---
+  { id: 'e-user-cat-data', source: 'user', target: 'category-data', ...edgeStyle('#10b981') },
+  { id: 'e-cat-data-sql', source: 'category-data', target: 'data-sql', ...edgeStyle('#10b981') },
+  { id: 'e-sql-pandas', source: 'data-sql', target: 'data-pandas', ...edgeStyle('#10b981') },
+  { id: 'e-sql-viz', source: 'data-sql', target: 'data-viz', ...edgeStyle('#10b981') },
+  { id: 'e-pandas-ml', source: 'data-pandas', target: 'data-ml', ...edgeStyle('#10b981') },
+
+  // --- SOFT SKILL EDGES ---
+  { id: 'e-user-cat-soft', source: 'user', target: 'category-soft', ...edgeStyle('#f59e0b') },
+  { id: 'e-cat-soft-comm', source: 'category-soft', target: 'soft-comm', ...edgeStyle('#f59e0b') },
+  { id: 'e-comm-agile', source: 'soft-comm', target: 'soft-agile', ...edgeStyle('#f59e0b') },
+  { id: 'e-comm-present', source: 'soft-comm', target: 'soft-present', ...edgeStyle('#f59e0b') },
+  { id: 'e-agile-lead', source: 'soft-agile', target: 'soft-lead', ...edgeStyle('#f59e0b') },
 ];

@@ -6,9 +6,9 @@ import Footer from '@/components/Footer';
 import { summaryNotes } from '@/lib/summary-data';
 import { notFound } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Bookmark, Download, Sparkles, CheckCircle2, 
-  Table2, Database, Key, Link2, Code2
+import {
+  Bookmark, Download, Sparkles, CheckCircle2,
+  Table2, Database, Key, Link2, Code2, Play
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -36,12 +36,12 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
 
     try {
       const element = pdfRef.current;
-      
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#FFFDF6', 
+        backgroundColor: '#FFFDF6',
         onclone: (clonedDoc) => {
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
@@ -50,14 +50,16 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
             for (let j = 0; j < styles.length; j++) {
               const prop = styles[j];
               const value = styles.getPropertyValue(prop);
-              // Nuclear Fix for oklch and oklab
-              if (value && value.includes("okl")) {
+              // Nuclear Fix for modern CSS color spaces parsing errors (oklch, oklab, lch, lab) in html2canvas
+              if (value && /(oklch|oklab|lch|lab)\(/i.test(value)) {
                 if (prop.includes("shadow") || prop.includes("ring")) {
                   el.style.setProperty(prop, "none", "important");
                 } else if (prop.includes("background")) {
                   el.style.setProperty(prop, "#ffffff", "important");
+                } else if (prop.includes("color")) {
+                  el.style.setProperty(prop, "#374151", "important");
                 } else {
-                  el.style.setProperty(prop, "#18181b", "important");
+                  el.style.setProperty(prop, "transparent", "important");
                 }
               }
             }
@@ -66,13 +68,13 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
           }
         }
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
+
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${data.title.replace(/\s+/g, '_')}_Summary.pdf`);
     } catch (error) {
@@ -91,7 +93,7 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
 
         {/* Capture Area starts HERE to include the title */}
         <div ref={pdfRef} id="pdf-content" className="w-full max-w-5xl px-8 z-10">
-          
+
           {/* Header Section (Now inside pdfRef) */}
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -101,21 +103,20 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
                 </span>
                 <span className="text-sm text-gray-500 font-medium">{data.subject}</span>
               </div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900">{data.title}</h1>
+              <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900">{data.topic_title || data.title}</h1>
             </div>
 
             {/* Buttons (Ignored during PDF capture) */}
             <div className="flex items-center gap-3" data-html2canvas-ignore="true">
-              <button 
+              <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
-                className={`p-2.5 rounded-lg border transition-all duration-300 shadow-sm ${
-                  isBookmarked ? 'bg-[#EAB308] border-[#CA8A04] text-white' : 'bg-white border-gray-200 text-gray-400'
-                }`}
+                className={`p-2.5 rounded-lg border transition-all duration-300 shadow-sm ${isBookmarked ? 'bg-[#EAB308] border-[#CA8A04] text-white' : 'bg-white border-gray-200 text-gray-400'
+                  }`}
               >
                 <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
               </button>
 
-              <button 
+              <button
                 onClick={handleDownload}
                 disabled={isDownloading}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#FFD700] hover:bg-[#E6C200] disabled:bg-gray-300 text-gray-900 rounded-lg shadow-md font-bold text-sm"
@@ -148,54 +149,103 @@ export default function SummaryPage({ params }: { params: Promise<{ moduleId: st
             </div>
 
             <div className="p-8 md:p-12 space-y-12 bg-white">
-              <section>
-                <SectionHeader title="Key Takeaways" />
-                <ul className="space-y-4 mt-6">
-                  {data.keyTakeaways.map((item, i) => (
-                    <li key={i} className="flex items-start gap-4">
-                      <CheckCircle2 className="w-5 h-5 text-[#22C55E] mt-1 shrink-0" />
-                      <p className="text-gray-700 leading-relaxed">{item}</p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              {data.theory_explanation ? (
+                <>
+                  <section>
+                    <SectionHeader title="Theory & Explanation" />
+                    <div className="mt-6 text-gray-700 leading-relaxed text-[17px] space-y-4">
+                      {data.theory_explanation.split('\n').map((line, i) => {
+                        if (!line.trim()) return null;
+                        const formattedLine = line
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/`([^`]+)`/g, '<code style="background-color: rgba(243, 244, 246, 0.5); color: #db2777; padding: 2px 6px; border-radius: 4px; font-size: 14px;">$1</code>')
+                          .replace(/\*   /g, '• ');
+                        return <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+                      })}
+                    </div>
+                  </section>
 
-              <section>
-                <SectionHeader title="Core Concepts" />
-                <div className="grid md:grid-cols-2 gap-6 mt-6">
-                  {data.coreConcepts.map((concept, i) => {
-                    const Icon = conceptIconMap[concept.icon] || Database;
-                    return (
-                      <div key={i} className="p-6 bg-[#F9FAFB] border border-gray-100 rounded-2xl">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Icon className="w-5 h-5 text-[#CA8A04]" />
-                          <h3 className="font-bold text-gray-900">{concept.title}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600">{concept.description}</p>
+                  {data.resources && (
+                    <section>
+                      <SectionHeader title="Learning Resources" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        {data.resources.map((res, i) => (
+                          <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 p-5 rounded-2xl border border-gray-100 bg-[#FAFAFA] hover:bg-white hover:shadow-md hover:border-[#FFD700] transition-all group">
+                            <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FEF9C3] text-[#CA8A04] flex items-center justify-center">
+                              {res.type === 'youtube' ? <Play className="w-6 h-6 ml-0.5" /> : <Bookmark className="w-6 h-6" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 group-hover:text-[#CA8A04] transition-colors mb-1 line-clamp-2">{res.title}</h4>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                                <span className="capitalize">{res.type}</span>
+                                <span>•</span>
+                                <span>{res.estimated_time_minutes} mins</span>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
+                    </section>
+                  )}
+                </>
+              ) : (
+                <>
+                  {data.keyTakeaways && (
+                    <section>
+                      <SectionHeader title="Key Takeaways" />
+                      <ul className="space-y-4 mt-6">
+                        {data.keyTakeaways.map((item, i) => (
+                          <li key={i} className="flex items-start gap-4">
+                            <CheckCircle2 className="w-5 h-5 text-[#22C55E] mt-1 shrink-0" />
+                            <p className="text-gray-700 leading-relaxed">{item}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
 
-              <section>
-                <SectionHeader title="Quick Cheat Sheet" />
-                <div className="mt-6 bg-[#18181B] rounded-2xl p-6 md:p-8 font-mono text-sm text-[#D4D4D8]">
-                  <div className="mb-8 bg-[#09090B] p-4 rounded-xl border border-white/10 text-[#FEF9C3]">
-                    <pre><code className="whitespace-pre-wrap">{data.cheatSheet.sqlStructure}</code></pre>
-                  </div>
-                  <div className="grid grid-cols-2 gap-8">
-                    <div>
-                      <p className="text-[#71717A] text-xs font-bold uppercase mb-4">ACID Properties</p>
-                      {data.cheatSheet.properties.map((p, i) => <div key={i} className="mb-1">• {p}</div>)}
-                    </div>
-                    <div>
-                      <p className="text-[#71717A] text-xs font-bold uppercase mb-4">Data Types</p>
-                      {data.cheatSheet.dataTypes.map((t, i) => <div key={i} className="mb-1">• {t}</div>)}
-                    </div>
-                  </div>
-                </div>
-              </section>
+                  {data.coreConcepts && (
+                    <section>
+                      <SectionHeader title="Core Concepts" />
+                      <div className="grid md:grid-cols-2 gap-6 mt-6">
+                        {data.coreConcepts.map((concept, i) => {
+                          const Icon = conceptIconMap[concept.icon] || Database;
+                          return (
+                            <div key={i} className="p-6 bg-[#F9FAFB] border border-gray-100 rounded-2xl">
+                              <div className="flex items-center gap-3 mb-3">
+                                <Icon className="w-5 h-5 text-[#CA8A04]" />
+                                <h3 className="font-bold text-gray-900">{concept.title}</h3>
+                              </div>
+                              <p className="text-sm text-gray-600">{concept.description}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  {data.cheatSheet && (
+                    <section>
+                      <SectionHeader title="Quick Cheat Sheet" />
+                      <div className="mt-6 bg-[#18181B] rounded-2xl p-6 md:p-8 font-mono text-sm text-[#D4D4D8]">
+                        <div className="mb-8 bg-[#09090B] p-4 rounded-xl border border-white/10 text-[#FEF9C3]">
+                          <pre><code className="whitespace-pre-wrap">{data.cheatSheet.sqlStructure}</code></pre>
+                        </div>
+                        <div className="grid grid-cols-2 gap-8">
+                          <div>
+                            <p className="text-[#71717A] text-xs font-bold uppercase mb-4">ACID Properties</p>
+                            {data.cheatSheet.properties.map((p, i) => <div key={i} className="mb-1">• {p}</div>)}
+                          </div>
+                          <div>
+                            <p className="text-[#71717A] text-xs font-bold uppercase mb-4">Data Types</p>
+                            {data.cheatSheet.dataTypes.map((t, i) => <div key={i} className="mb-1">• {t}</div>)}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
