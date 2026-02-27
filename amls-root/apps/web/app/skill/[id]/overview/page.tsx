@@ -97,13 +97,26 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             if (found) learningPathData = found;
           }
 
+          // Calculate a readable estimated time from minutes if available
+          let readableTime = "Adaptive";
+          if (parsed?.estimatedTimeMinutes && typeof parsed.estimatedTimeMinutes === 'number') {
+            const mins = parsed.estimatedTimeMinutes;
+            if (mins > 0) {
+              const hours = Math.floor(mins / 60);
+              const remMins = mins % 60;
+              if (hours > 0 && remMins > 0) readableTime = `${hours}h ${remMins}m`;
+              else if (hours > 0) readableTime = `${hours}h`;
+              else readableTime = `${remMins}m`;
+            }
+          }
+
           // Transform CrewAI JSON format to standard frontend SkillTrack format
           const transformedData: SkillTrack = {
             id: id,
             title: parsed?.topic || dbTopic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             tagline: parsed?.description || parsed?.roadmap?.description || "Your AI-Generated Learning Path",
             progress: 0,
-            estimatedTime: "Adaptive",
+            estimatedTime: readableTime,
             welcomeMessage: "Welcome! Your specialized AI roadmap has been forged.",
             quote: { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
             modules: learningPathData.map((step: any, idx: number) => ({

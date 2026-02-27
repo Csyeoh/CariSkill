@@ -28,8 +28,9 @@ educate_task:
     
     Keep the user's experience level ({experience}) and goal ({goal}) in mind.
     Make the theory highly engaging. Explain the theory in details, (e.g. what is it, how it works, and why it matters).
+    You must also evaluate and assign a difficulty rating ("easy", "medium", or "hard") for each topic.
   expected_output: >
-    A comprehensive document containing the written theory for every requested micro-topic.
+    A comprehensive document containing the written theory and difficulty rating for every requested micro-topic.
   agent: educator
 
 estimate_and_compile_task:

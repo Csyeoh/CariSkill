@@ -20,6 +20,90 @@ const messages = [
   "Finalizing your roadmap..."
 ];
 
+// --- Helper Functions for Roadmap Generation ---
+const preInsertRoadmapDB = async (supabase: any, userId: string, activeTopic: string) => {
+  const { data, error } = await supabase.from('roadmaps').insert({
+    user_id: userId,
+    topic: activeTopic,
+    content: { status: "generating" }
+  }).select().single();
+
+  if (error) {
+    console.warn("Failed to pre-insert roadmap:", error);
+    return null;
+  }
+  return data;
+};
+
+const fetchRoadmapFromAI = async (sessionId: string, activeTopic: string, payload: any) => {
+  const Url = 'http://localhost:8000';
+  const response = await fetch(`${Url}/api/start_macro`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id: sessionId,
+      topic: activeTopic,
+      experience: payload.experience || "Beginner",
+      goal: payload.goal || "None",
+      constraints: payload.constraints || "None"
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`Master Flow API Failed with status ${response.status}: ${text}`);
+    throw new Error('Failed to start master flow');
+  }
+
+  return response.json();
+};
+
+const parseRoadmapData = (rawResult: any) => {
+  let parsedRoadmap;
+  try {
+    const targetPayload = rawResult.state?.blueprint || rawResult.roadmap?.roadmap || rawResult.roadmap || rawResult;
+    parsedRoadmap = typeof targetPayload === 'string'
+      ? JSON.parse(targetPayload)
+      : targetPayload;
+  } catch (e) {
+    console.error("Failed to parse raw roadmap JSON:", e);
+    const fallbackStr = rawResult.roadmap || rawResult;
+    parsedRoadmap = typeof fallbackStr === 'string' ? { error_unparsed_raw_text: fallbackStr } : fallbackStr;
+  }
+
+  if (!parsedRoadmap) throw new Error("Parsed roadmap payload is null or undefined!");
+  return parsedRoadmap;
+};
+
+const updateRoadmapDB = async (supabase: any, dbRecordId: string, activeTopic: string, parsedRoadmap: any, totalTimeMinutes: number) => {
+  const finalPayload = { topic: activeTopic, roadmap: parsedRoadmap, time: totalTimeMinutes };
+  const { error } = await supabase.from('roadmaps').update({ content: finalPayload, time: totalTimeMinutes }).eq('id', dbRecordId);
+  if (error) console.error("Failed to update roadmap in Supabase:", error);
+};
+
+const insertMicroTopicsDB = async (supabase: any, dbRecordId: string, rawResult: any) => {
+  const courseContent = rawResult.state?.completed_modules || rawResult.course_content || rawResult.response?.course_content || [];
+  if (!courseContent || courseContent.length === 0) return;
+
+  const microInsertions: any[] = [];
+  courseContent.forEach((module: any) => {
+    if (module.micro_topics && Array.isArray(module.micro_topics)) {
+      module.micro_topics.forEach((topic: any) => {
+        microInsertions.push({
+          roadmap_id: dbRecordId,
+          macro_node_id: module.node_id,
+          content: topic
+        });
+      });
+    }
+  });
+
+  if (microInsertions.length > 0) {
+    const { error } = await supabase.from('micro_topics_contents').insert(microInsertions);
+    if (error) console.error("Failed to insert micro topics into Supabase:", error);
+  }
+};
+
 function LoadingRoadmapContent() {
   const router = useRouter();
   const { user } = useAuth();
@@ -51,102 +135,54 @@ function LoadingRoadmapContent() {
 
     const generateRoadmap = async () => {
       try {
-        const experience = payload.experience || "Beginner";
-        const goal = payload.goal || "None";
-        const constraints = payload.constraints || "None";
         const sessionId = payload.session_id || `temp-${Date.now()}`;
-
         let targetSkillId = activeTopic.toLowerCase().replace(/ /g, '-');
+
         const supabase = createClient();
         let dbRecordId: string | null = null;
 
+        // 1. Pre-insert to DB if user exists
         if (user) {
-          const { data: insertData, error: preInsertError } = await supabase.from('roadmaps').insert({
-            user_id: user.id,
-            topic: activeTopic,
-            content: { status: "generating" }
-          }).select().single();
-
-          if (!preInsertError && insertData) {
-            dbRecordId = insertData.id;
-            targetSkillId = insertData.id;
+          const record = await preInsertRoadmapDB(supabase, user.id, activeTopic);
+          if (record) {
+            dbRecordId = record.id;
+            targetSkillId = record.id;
           }
         }
 
-        const Url = 'http://localhost:8000';
-        const response = await fetch(`${Url}/api/start_macro`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: sessionId,
-            topic: activeTopic,
-            experience: experience,
-            goal: goal,
-            constraints: constraints
-          })
-        });
-
-        if (!response.ok) {
-          const text = await response.text();
-          console.error(`Master Flow API Failed with status ${response.status}: ${text}`);
-          throw new Error('Failed to start master flow');
-        }
-
-        const rawResult = await response.json();
+        // 2. Fetch from Master Flow API
+        const rawResult = await fetchRoadmapFromAI(sessionId, activeTopic, payload);
         console.log("Raw API Response:", rawResult);
 
+        // 3. Parse roadmap safely
+        const parsedRoadmap = parseRoadmapData(rawResult);
 
-        let parsedRoadmap;
-        try {
-          const targetPayload = rawResult.state?.blueprint || rawResult.roadmap?.roadmap || rawResult.roadmap || rawResult;
-          parsedRoadmap = typeof targetPayload === 'string'
-            ? JSON.parse(targetPayload)
-            : targetPayload;
-        } catch (e) {
-          console.error("Failed to parse raw roadmap JSON:", e);
-          const fallbackStr = rawResult.roadmap || rawResult;
-          // Supabase JSONB expects an object. If the payload is a raw string/invalid JSON, wrap it!
-          parsedRoadmap = typeof fallbackStr === 'string' ? { error_unparsed_raw_text: fallbackStr } : fallbackStr;
-        }
-
-        if (!parsedRoadmap) throw new Error("Parsed roadmap payload is null or undefined!");
-
-        // Update the Supabase record with the actual data if we pre-inserted it
-        if (user && dbRecordId) {
-          const finalPayload = {
-            topic: activeTopic,
-            roadmap: parsedRoadmap
-          };
-          const { error: updateError } = await supabase.from('roadmaps').update({
-            content: finalPayload
-          }).eq('id', dbRecordId);
-
-          if (updateError) {
-            console.error("Failed to update roadmap in Supabase:", updateError);
-          }
-
-          // Insert micro topics contents if present
-          const courseContent = rawResult.state?.completed_modules || rawResult.response?.course_content || [];
-          if (courseContent && courseContent.length > 0) {
-            const microInsertions = courseContent.map((module: any) => ({
-              roadmap_id: dbRecordId,
-              macro_node_id: module.node_id,
-              content: module
-            }));
-
-            const { error: microInsertError } = await supabase
-              .from('micro_topics_contents')
-              .insert(microInsertions);
-
-            if (microInsertError) {
-              console.error("Failed to insert micro topics into Supabase:", microInsertError);
+        // 3.5 Calculate total time
+        let totalTimeMinutes = 0;
+        const courseContent = rawResult.state?.completed_modules || rawResult.course_content || rawResult.response?.course_content || [];
+        if (courseContent && courseContent.length > 0) {
+          courseContent.forEach((module: any) => {
+            if (module.micro_topics && Array.isArray(module.micro_topics)) {
+              module.micro_topics.forEach((topic: any) => {
+                if (topic.topic_total_time_minutes) {
+                  totalTimeMinutes += topic.topic_total_time_minutes;
+                }
+              });
             }
-          }
+          });
         }
 
-        // Always save to localStorage as a fallback for immediate rendering/guests
-        localStorage.setItem(`roadmap_${targetSkillId}`, JSON.stringify(parsedRoadmap));
+        // Inject total time into the parsed object so the overview page can fetch it easily
+        parsedRoadmap.estimatedTimeMinutes = totalTimeMinutes;
 
+        // 4. Update the DB and save micro topics
+        if (user && dbRecordId) {
+          await updateRoadmapDB(supabase, dbRecordId, activeTopic, parsedRoadmap, totalTimeMinutes);
+          await insertMicroTopicsDB(supabase, dbRecordId, rawResult);
+        }
+
+        // 5. Finalize UI navigation
+        localStorage.setItem(`roadmap_${targetSkillId}`, JSON.stringify(parsedRoadmap));
         setProgress(100);
         setTimeout(() => {
           router.push(`/skill/${targetSkillId}/overview`);

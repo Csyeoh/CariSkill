@@ -16,9 +16,12 @@ class Resource(BaseModel):
     type: str = Field(..., description="e.g., 'youtube', 'official_doc', 'article'")
     estimated_time_minutes: int = Field(..., description="Estimated time to consume this specific resource.")
 
+from typing import List, Optional, Literal
+
 class MicroTopicContent(BaseModel):
     topic_title: str = Field(..., description="Must exactly match one of the suggested_micro_topics.")
     theory_explanation: str = Field(..., description="Detailed, engaging theoretical explanation written by the Educator.")
+    difficulty: Literal["easy", "medium", "hard"] = Field(..., description="Estimated difficulty level of this topic.")
     resources: List[Resource] = Field(default_factory=list, description="Curated links. Can be empty if nothing high-quality was found.")
     topic_total_time_minutes: int = Field(..., description="Total time to read the theory + consume all resources.")
 

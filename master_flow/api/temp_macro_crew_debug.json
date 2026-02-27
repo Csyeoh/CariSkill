@@ -2,321 +2,289 @@
   "pydantic_output": {
     "nodes": [
       {
-        "node_id": "intro_to_oop",
-        "title": "Introduction to Object-Oriented Programming",
-        "rationale": "This module provides a foundational understanding of what Object-Oriented Programming is, its core concepts, and why it's a powerful paradigm for building software. It's essential for a complete beginner to grasp these basics before diving into practical application.",
+        "node_id": "intro_data_science_ethics",
+        "title": "Introduction to Data Science & Ethics",
+        "rationale": "To begin a new career in data science, it's crucial to first understand what data science entails, the roles within the field, and the fundamental ethical considerations that underpin all data-related activities. This foundational module sets the stage for responsible and informed practice.",
         "prerequisites": [],
         "suggested_micro_topics": [
-          "What is OOP?",
-          "Procedural vs. Object-Oriented Programming",
-          "Benefits of OOP",
-          "Key OOP terminology (class, object, instance, method, attribute)"
+          "What is Data Science?",
+          "Roles of a Data Scientist",
+          "Data Ethics Principles",
+          "Informed Consent and Data Ownership",
+          "Privacy, Transparency, and Anonymity",
+          "Data Validity and Algorithmic Fairness",
+          "Societal Consequences of Data Science",
+          "Code of Ethics in Data Science"
         ]
       },
       {
-        "node_id": "java_basics",
-        "title": "Java Programming Language Fundamentals",
-        "rationale": "To implement OOP concepts, a beginner needs a solid grasp of a programming language that supports OOP. Java is a widely used language for teaching and applying OOP, making it an excellent choice for a beginner to build a project. This module covers the essential syntax and constructs.",
-        "prerequisites": [
-          "intro_to_oop"
-        ],
+        "node_id": "foundational_programming_python",
+        "title": "Foundational Programming with Python",
+        "rationale": "Given little prior coding experience, a strong foundation in a versatile language like Python is essential. Python is widely used in data science for data manipulation, analysis, and machine learning, making it a critical first step for practical application.",
+        "prerequisites": [],
         "suggested_micro_topics": [
-          "Java syntax basics",
-          "Primitive data types",
-          "Variables and operators",
-          "Conditional statements (if-else, switch)",
-          "Loops (for, while, do-while)",
-          "Console input/output",
-          "Methods and functions"
+          "Python Syntax and Basic Data Types",
+          "Variables and Operators",
+          "Control Flow (If/Else, Loops)",
+          "Functions and Modules",
+          "Basic Data Structures (Lists, Tuples, Dictionaries, Sets)",
+          "Introduction to Python Libraries (NumPy for arrays, Pandas for DataFrames)",
+          "Reading and Writing Files"
         ]
       },
       {
-        "node_id": "classes_objects",
-        "title": "Classes and Objects in Java",
-        "rationale": "This module is the cornerstone of OOP. Understanding how to define classes and create objects is fundamental to building any object-oriented project. It directly applies the theoretical knowledge from the introduction to practical coding.",
-        "prerequisites": [
-          "java_basics"
-        ],
+        "node_id": "essential_math_statistics",
+        "title": "Essential Mathematics & Statistics for Data Science",
+        "rationale": "Data science is heavily rooted in statistical and mathematical concepts. Understanding these fundamentals is vital for interpreting data, building models, and making data-driven decisions, even with little prior experience.",
+        "prerequisites": [],
         "suggested_micro_topics": [
-          "Defining classes",
-          "Creating objects (instantiation)",
-          "Attributes and behaviors (fields and methods)",
-          "Constructors",
-          "The 'this' keyword",
-          "Object references"
+          "Descriptive Statistics (Mean, Median, Mode, Variance, Standard Deviation)",
+          "Probability Theory Basics (Events, Conditional Probability, Bayes' Theorem)",
+          "Probability Distributions (Normal, Binomial, Poisson)",
+          "Inferential Statistics (Hypothesis Testing, p-values, Confidence Intervals)",
+          "Sampling Techniques and Bias",
+          "Correlation and Covariance",
+          "Introduction to Linear Algebra (Vectors, Matrices - conceptual for ML)"
         ]
       },
       {
-        "node_id": "encapsulation_abstraction",
-        "title": "Encapsulation and Abstraction",
-        "rationale": "These are two of the four pillars of OOP. Encapsulation helps in organizing code and protecting data, while abstraction focuses on simplifying complex systems. Mastering these concepts is crucial for writing robust and maintainable object-oriented code.",
+        "node_id": "data_collection_management",
+        "title": "Data Collection and Management Fundamentals",
+        "rationale": "Before any analysis can occur, data must be properly collected, acquired, and managed. This module covers the initial steps of a data science project, ensuring data is reliable and organized for subsequent steps.",
         "prerequisites": [
-          "classes_objects"
+          "intro_data_science_ethics",
+          "foundational_programming_python"
         ],
         "suggested_micro_topics": [
-          "Access modifiers (public, private, protected)",
-          "Getters and Setters",
-          "Data hiding",
-          "Abstract classes",
-          "Interfaces",
-          "Information hiding"
+          "Identifying Data Sources (APIs, Databases, Web Scraping)",
+          "Data Acquisition Methods",
+          "Data Storage Systems (Relational vs. Non-relational databases)",
+          "Basic SQL for Data Retrieval",
+          "Data Quality Management (Consistency, Completeness, Accuracy)",
+          "Data Security and Governance Principles",
+          "Data Infrastructure Concepts"
         ]
       },
       {
-        "node_id": "inheritance",
-        "title": "Inheritance",
-        "rationale": "Inheritance is another core OOP principle that promotes code reusability and establishes 'is-a' relationships between classes. It's vital for building hierarchical structures in your project and reducing redundancy.",
+        "node_id": "data_wrangling_manipulation",
+        "title": "Data Wrangling and Manipulation",
+        "rationale": "Real-world data is rarely clean. This module teaches the practical skills needed to clean, transform, and prepare raw data for analysis, a crucial step that often consumes a significant portion of a data scientist's time.",
         "prerequisites": [
-          "encapsulation_abstraction"
+          "foundational_programming_python",
+          "data_collection_management"
         ],
         "suggested_micro_topics": [
-          "Extending classes",
-          "Superclass and subclass",
-          "Method overriding",
-          "The 'super' keyword",
-          "Single inheritance",
-          "Hierarchical inheritance"
+          "Handling Missing Values (Imputation, Deletion)",
+          "Detecting and Treating Outliers",
+          "Data Transformation Techniques (Scaling, Normalization)",
+          "Merging, Joining, and Concatenating Datasets (Pandas)",
+          "Reshaping Data (Pivoting, Melting)",
+          "Feature Engineering Basics (Creating new variables)",
+          "String Manipulation and Regular Expressions"
         ]
       },
       {
-        "node_id": "polymorphism",
-        "title": "Polymorphism",
-        "rationale": "Polymorphism, the fourth pillar of OOP, allows objects of different classes to be treated as objects of a common type. This flexibility is essential for writing adaptable and extensible code, a key aspect of building a scalable project.",
+        "node_id": "eda_visualization",
+        "title": "Exploratory Data Analysis (EDA) & Visualization",
+        "rationale": "Once data is clean, EDA allows for initial insights and hypothesis generation. Data visualization is key to understanding patterns, communicating findings effectively, and making data accessible to others.",
         "prerequisites": [
-          "inheritance"
+          "foundational_programming_python",
+          "essential_math_statistics",
+          "data_wrangling_manipulation"
         ],
         "suggested_micro_topics": [
-          "Method overloading",
-          "Dynamic method dispatch",
-          "Upcasting and downcasting",
-          "Runtime polymorphism",
-          "Compile-time polymorphism"
+          "Goals and Process of EDA",
+          "Univariate and Bivariate Analysis",
+          "Correlation Analysis",
+          "Data Visualization Principles",
+          "Plotting with Matplotlib and Seaborn (Histograms, Scatter Plots, Box Plots)",
+          "Interpreting Visualizations",
+          "Communicating Insights from EDA"
         ]
       },
       {
-        "node_id": "arrays_collections",
-        "title": "Arrays and Collections",
-        "rationale": "To build a project, you'll need to manage collections of objects. This module introduces fundamental data structures in Java, enabling you to store, access, and manipulate multiple objects efficiently.",
+        "node_id": "intro_machine_learning",
+        "title": "Introduction to Machine Learning",
+        "rationale": "Machine learning is a core component of modern data science, enabling predictive modeling and pattern recognition. This module introduces fundamental concepts and algorithms, building upon statistical and programming foundations.",
         "prerequisites": [
-          "classes_objects"
+          "foundational_programming_python",
+          "essential_math_statistics",
+          "data_wrangling_manipulation",
+          "eda_visualization"
         ],
         "suggested_micro_topics": [
-          "One-dimensional arrays",
-          "Multi-dimensional arrays",
-          "ArrayList",
-          "LinkedList",
-          "Basic collection operations (add, remove, get, size)"
+          "What is Machine Learning?",
+          "Supervised vs. Unsupervised Learning",
+          "Regression Algorithms (Linear Regression)",
+          "Classification Algorithms (Logistic Regression, K-Nearest Neighbors)",
+          "Model Training and Evaluation Metrics (Accuracy, Precision, Recall)",
+          "Overfitting and Underfitting",
+          "Introduction to Scikit-learn Library"
         ]
       },
       {
-        "node_id": "exception_handling",
-        "title": "Exception Handling",
-        "rationale": "Robust projects need to gracefully handle errors and unexpected situations. This module teaches how to manage exceptions, preventing program crashes and improving user experience.",
+        "node_id": "real_world_projects_portfolio",
+        "title": "Real-World Projects & Portfolio Building",
+        "rationale": "To transition into a data science career, practical application of learned skills through projects is paramount. This module focuses on integrating all previous knowledge into tangible projects and showcasing them to potential employers.",
         "prerequisites": [
-          "java_basics"
+          "intro_machine_learning"
         ],
         "suggested_micro_topics": [
-          "Try-catch blocks",
-          "Finally block",
-          "Throwing exceptions",
-          "Custom exceptions",
-          "Checked vs. unchecked exceptions"
-        ]
-      },
-      {
-        "node_id": "basic_algorithms",
-        "title": "Basic Algorithms in OOP Context",
-        "rationale": "While not strictly an OOP concept, understanding basic algorithms is crucial for solving problems efficiently within an object-oriented framework. This module helps in applying OOP principles to algorithmic thinking.",
-        "prerequisites": [
-          "arrays_collections"
-        ],
-        "suggested_micro_topics": [
-          "Searching algorithms (linear, binary)",
-          "Sorting algorithms (bubble, selection)",
-          "Recursion fundamentals",
-          "Time complexity (Big O notation)"
-        ]
-      },
-      {
-        "node_id": "project_application",
-        "title": "Building a Simple OOP Project",
-        "rationale": "The ultimate goal is to build a project. This module serves as the practical application of all learned OOP concepts, guiding the user through the process of designing and implementing a small object-oriented application.",
-        "prerequisites": [
-          "polymorphism",
-          "arrays_collections",
-          "exception_handling",
-          "basic_algorithms"
-        ],
-        "suggested_micro_topics": [
-          "Project planning and design",
-          "Identifying classes and objects for a project",
-          "Implementing class relationships",
-          "Testing and debugging",
-          "Refactoring for better OOP design"
+          "Project Planning and Scoping",
+          "Finding and Sourcing Project Data",
+          "End-to-End Data Science Project Workflow",
+          "Version Control with Git and GitHub Basics",
+          "Presenting Project Findings and Insights",
+          "Building a Data Science Portfolio",
+          "Networking and Career Strategies"
         ]
       }
     ]
   },
   "json_dict_output": null,
-  "raw_output": "{\n  \"nodes\": [\n    {\n      \"node_id\": \"intro_to_oop\",\n      \"title\": \"Introduction to Object-Oriented Programming\",\n      \"rationale\": \"This module provides a foundational understanding of what Object-Oriented Programming is, its core concepts, and why it's a powerful paradigm for building software. It's essential for a complete beginner to grasp these basics before diving into practical application.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"What is OOP?\",\n        \"Procedural vs. Object-Oriented Programming\",\n        \"Benefits of OOP\",\n        \"Key OOP terminology (class, object, instance, method, attribute)\"\n      ]\n    },\n    {\n      \"node_id\": \"java_basics\",\n      \"title\": \"Java Programming Language Fundamentals\",\n      \"rationale\": \"To implement OOP concepts, a beginner needs a solid grasp of a programming language that supports OOP. Java is a widely used language for teaching and applying OOP, making it an excellent choice for a beginner to build a project. This module covers the essential syntax and constructs.\",\n      \"prerequisites\": [\n        \"intro_to_oop\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Java syntax basics\",\n        \"Primitive data types\",\n        \"Variables and operators\",\n        \"Conditional statements (if-else, switch)\",\n        \"Loops (for, while, do-while)\",\n        \"Console input/output\",\n        \"Methods and functions\"\n      ]\n    },\n    {\n      \"node_id\": \"classes_objects\",\n      \"title\": \"Classes and Objects in Java\",\n      \"rationale\": \"This module is the cornerstone of OOP. Understanding how to define classes and create objects is fundamental to building any object-oriented project. It directly applies the theoretical knowledge from the introduction to practical coding.\",\n      \"prerequisites\": [\n        \"java_basics\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Defining classes\",\n        \"Creating objects (instantiation)\",\n        \"Attributes and behaviors (fields and methods)\",\n        \"Constructors\",\n        \"The 'this' keyword\",\n        \"Object references\"\n      ]\n    },\n    {\n      \"node_id\": \"encapsulation_abstraction\",\n      \"title\": \"Encapsulation and Abstraction\",\n      \"rationale\": \"These are two of the four pillars of OOP. Encapsulation helps in organizing code and protecting data, while abstraction focuses on simplifying complex systems. Mastering these concepts is crucial for writing robust and maintainable object-oriented code.\",\n      \"prerequisites\": [\n        \"classes_objects\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Access modifiers (public, private, protected)\",\n        \"Getters and Setters\",\n        \"Data hiding\",\n        \"Abstract classes\",\n        \"Interfaces\",\n        \"Information hiding\"\n      ]\n    },\n    {\n      \"node_id\": \"inheritance\",\n      \"title\": \"Inheritance\",\n      \"rationale\": \"Inheritance is another core OOP principle that promotes code reusability and establishes 'is-a' relationships between classes. It's vital for building hierarchical structures in your project and reducing redundancy.\",\n      \"prerequisites\": [\n        \"encapsulation_abstraction\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Extending classes\",\n        \"Superclass and subclass\",\n        \"Method overriding\",\n        \"The 'super' keyword\",\n        \"Single inheritance\",\n        \"Hierarchical inheritance\"\n      ]\n    },\n    {\n      \"node_id\": \"polymorphism\",\n      \"title\": \"Polymorphism\",\n      \"rationale\": \"Polymorphism, the fourth pillar of OOP, allows objects of different classes to be treated as objects of a common type. This flexibility is essential for writing adaptable and extensible code, a key aspect of building a scalable project.\",\n      \"prerequisites\": [\n        \"inheritance\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Method overloading\",\n        \"Dynamic method dispatch\",\n        \"Upcasting and downcasting\",\n        \"Runtime polymorphism\",\n        \"Compile-time polymorphism\"\n      ]\n    },\n    {\n      \"node_id\": \"arrays_collections\",\n      \"title\": \"Arrays and Collections\",\n      \"rationale\": \"To build a project, you'll need to manage collections of objects. This module introduces fundamental data structures in Java, enabling you to store, access, and manipulate multiple objects efficiently.\",\n      \"prerequisites\": [\n        \"classes_objects\"\n      ],\n      \"suggested_micro_topics\": [\n        \"One-dimensional arrays\",\n        \"Multi-dimensional arrays\",\n        \"ArrayList\",\n        \"LinkedList\",\n        \"Basic collection operations (add, remove, get, size)\"\n      ]\n    },\n    {\n      \"node_id\": \"exception_handling\",\n      \"title\": \"Exception Handling\",\n      \"rationale\": \"Robust projects need to gracefully handle errors and unexpected situations. This module teaches how to manage exceptions, preventing program crashes and improving user experience.\",\n      \"prerequisites\": [\n        \"java_basics\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Try-catch blocks\",\n        \"Finally block\",\n        \"Throwing exceptions\",\n        \"Custom exceptions\",\n        \"Checked vs. unchecked exceptions\"\n      ]\n    },\n    {\n      \"node_id\": \"basic_algorithms\",\n      \"title\": \"Basic Algorithms in OOP Context\",\n      \"rationale\": \"While not strictly an OOP concept, understanding basic algorithms is crucial for solving problems efficiently within an object-oriented framework. This module helps in applying OOP principles to algorithmic thinking.\",\n      \"prerequisites\": [\n        \"arrays_collections\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Searching algorithms (linear, binary)\",\n        \"Sorting algorithms (bubble, selection)\",\n        \"Recursion fundamentals\",\n        \"Time complexity (Big O notation)\"\n      ]\n    },\n    {\n      \"node_id\": \"project_application\",\n      \"title\": \"Building a Simple OOP Project\",\n      \"rationale\": \"The ultimate goal is to build a project. This module serves as the practical application of all learned OOP concepts, guiding the user through the process of designing and implementing a small object-oriented application.\",\n      \"prerequisites\": [\n        \"polymorphism\",\n        \"arrays_collections\",\n        \"exception_handling\",\n        \"basic_algorithms\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Project planning and design\",\n        \"Identifying classes and objects for a project\",\n        \"Implementing class relationships\",\n        \"Testing and debugging\",\n        \"Refactoring for better OOP design\"\n      ]\n    }\n  ]\n}",
+  "raw_output": "```json\n{\n  \"nodes\": [\n    {\n      \"node_id\": \"intro_data_science_ethics\",\n      \"title\": \"Introduction to Data Science & Ethics\",\n      \"rationale\": \"To begin a new career in data science, it's crucial to first understand what data science entails, the roles within the field, and the fundamental ethical considerations that underpin all data-related activities. This foundational module sets the stage for responsible and informed practice.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"What is Data Science?\",\n        \"Roles of a Data Scientist\",\n        \"Data Ethics Principles\",\n        \"Informed Consent and Data Ownership\",\n        \"Privacy, Transparency, and Anonymity\",\n        \"Data Validity and Algorithmic Fairness\",\n        \"Societal Consequences of Data Science\",\n        \"Code of Ethics in Data Science\"\n      ]\n    },\n    {\n      \"node_id\": \"foundational_programming_python\",\n      \"title\": \"Foundational Programming with Python\",\n      \"rationale\": \"Given little prior coding experience, a strong foundation in a versatile language like Python is essential. Python is widely used in data science for data manipulation, analysis, and machine learning, making it a critical first step for practical application.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"Python Syntax and Basic Data Types\",\n        \"Variables and Operators\",\n        \"Control Flow (If/Else, Loops)\",\n        \"Functions and Modules\",\n        \"Basic Data Structures (Lists, Tuples, Dictionaries, Sets)\",\n        \"Introduction to Python Libraries (NumPy for arrays, Pandas for DataFrames)\",\n        \"Reading and Writing Files\"\n      ]\n    },\n    {\n      \"node_id\": \"essential_math_statistics\",\n      \"title\": \"Essential Mathematics & Statistics for Data Science\",\n      \"rationale\": \"Data science is heavily rooted in statistical and mathematical concepts. Understanding these fundamentals is vital for interpreting data, building models, and making data-driven decisions, even with little prior experience.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"Descriptive Statistics (Mean, Median, Mode, Variance, Standard Deviation)\",\n        \"Probability Theory Basics (Events, Conditional Probability, Bayes' Theorem)\",\n        \"Probability Distributions (Normal, Binomial, Poisson)\",\n        \"Inferential Statistics (Hypothesis Testing, p-values, Confidence Intervals)\",\n        \"Sampling Techniques and Bias\",\n        \"Correlation and Covariance\",\n        \"Introduction to Linear Algebra (Vectors, Matrices - conceptual for ML)\"\n      ]\n    },\n    {\n      \"node_id\": \"data_collection_management\",\n      \"title\": \"Data Collection and Management Fundamentals\",\n      \"rationale\": \"Before any analysis can occur, data must be properly collected, acquired, and managed. This module covers the initial steps of a data science project, ensuring data is reliable and organized for subsequent steps.\",\n      \"prerequisites\": [\n        \"intro_data_science_ethics\",\n        \"foundational_programming_python\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Identifying Data Sources (APIs, Databases, Web Scraping)\",\n        \"Data Acquisition Methods\",\n        \"Data Storage Systems (Relational vs. Non-relational databases)\",\n        \"Basic SQL for Data Retrieval\",\n        \"Data Quality Management (Consistency, Completeness, Accuracy)\",\n        \"Data Security and Governance Principles\",\n        \"Data Infrastructure Concepts\"\n      ]\n    },\n    {\n      \"node_id\": \"data_wrangling_manipulation\",\n      \"title\": \"Data Wrangling and Manipulation\",\n      \"rationale\": \"Real-world data is rarely clean. This module teaches the practical skills needed to clean, transform, and prepare raw data for analysis, a crucial step that often consumes a significant portion of a data scientist's time.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"data_collection_management\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Handling Missing Values (Imputation, Deletion)\",\n        \"Detecting and Treating Outliers\",\n        \"Data Transformation Techniques (Scaling, Normalization)\",\n        \"Merging, Joining, and Concatenating Datasets (Pandas)\",\n        \"Reshaping Data (Pivoting, Melting)\",\n        \"Feature Engineering Basics (Creating new variables)\",\n        \"String Manipulation and Regular Expressions\"\n      ]\n    },\n    {\n      \"node_id\": \"eda_visualization\",\n      \"title\": \"Exploratory Data Analysis (EDA) & Visualization\",\n      \"rationale\": \"Once data is clean, EDA allows for initial insights and hypothesis generation. Data visualization is key to understanding patterns, communicating findings effectively, and making data accessible to others.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"essential_math_statistics\",\n        \"data_wrangling_manipulation\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Goals and Process of EDA\",\n        \"Univariate and Bivariate Analysis\",\n        \"Correlation Analysis\",\n        \"Data Visualization Principles\",\n        \"Plotting with Matplotlib and Seaborn (Histograms, Scatter Plots, Box Plots)\",\n        \"Interpreting Visualizations\",\n        \"Communicating Insights from EDA\"\n      ]\n    },\n    {\n      \"node_id\": \"intro_machine_learning\",\n      \"title\": \"Introduction to Machine Learning\",\n      \"rationale\": \"Machine learning is a core component of modern data science, enabling predictive modeling and pattern recognition. This module introduces fundamental concepts and algorithms, building upon statistical and programming foundations.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"essential_math_statistics\",\n        \"data_wrangling_manipulation\",\n        \"eda_visualization\"\n      ],\n      \"suggested_micro_topics\": [\n        \"What is Machine Learning?\",\n        \"Supervised vs. Unsupervised Learning\",\n        \"Regression Algorithms (Linear Regression)\",\n        \"Classification Algorithms (Logistic Regression, K-Nearest Neighbors)\",\n        \"Model Training and Evaluation Metrics (Accuracy, Precision, Recall)\",\n        \"Overfitting and Underfitting\",\n        \"Introduction to Scikit-learn Library\"\n      ]\n    },\n    {\n      \"node_id\": \"real_world_projects_portfolio\",\n      \"title\": \"Real-World Projects & Portfolio Building\",\n      \"rationale\": \"To transition into a data science career, practical application of learned skills through projects is paramount. This module focuses on integrating all previous knowledge into tangible projects and showcasing them to potential employers.\",\n      \"prerequisites\": [\n        \"intro_machine_learning\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Project Planning and Scoping\",\n        \"Finding and Sourcing Project Data\",\n        \"End-to-End Data Science Project Workflow\",\n        \"Version Control with Git and GitHub Basics\",\n        \"Presenting Project Findings and Insights\",\n        \"Building a Data Science Portfolio\",\n        \"Networking and Career Strategies\"\n      ]\n    }\n  ]\n}\n```",
   "tasks_output": [
     {
-      "raw": "{\n  \"nodes\": [\n    {\n      \"node_id\": \"intro_to_oop\",\n      \"title\": \"Introduction to Object-Oriented Programming\",\n      \"rationale\": \"This module provides a foundational understanding of what Object-Oriented Programming is, its core concepts, and why it's a powerful paradigm for building software. It's essential for a complete beginner to grasp these basics before diving into practical application.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"What is OOP?\",\n        \"Procedural vs. Object-Oriented Programming\",\n        \"Benefits of OOP\",\n        \"Key OOP terminology (class, object, instance, method, attribute)\"\n      ]\n    },\n    {\n      \"node_id\": \"java_basics\",\n      \"title\": \"Java Programming Language Fundamentals\",\n      \"rationale\": \"To implement OOP concepts, a beginner needs a solid grasp of a programming language that supports OOP. Java is a widely used language for teaching and applying OOP, making it an excellent choice for a beginner to build a project. This module covers the essential syntax and constructs.\",\n      \"prerequisites\": [\n        \"intro_to_oop\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Java syntax basics\",\n        \"Primitive data types\",\n        \"Variables and operators\",\n        \"Conditional statements (if-else, switch)\",\n        \"Loops (for, while, do-while)\",\n        \"Console input/output\",\n        \"Methods and functions\"\n      ]\n    },\n    {\n      \"node_id\": \"classes_objects\",\n      \"title\": \"Classes and Objects in Java\",\n      \"rationale\": \"This module is the cornerstone of OOP. Understanding how to define classes and create objects is fundamental to building any object-oriented project. It directly applies the theoretical knowledge from the introduction to practical coding.\",\n      \"prerequisites\": [\n        \"java_basics\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Defining classes\",\n        \"Creating objects (instantiation)\",\n        \"Attributes and behaviors (fields and methods)\",\n        \"Constructors\",\n        \"The 'this' keyword\",\n        \"Object references\"\n      ]\n    },\n    {\n      \"node_id\": \"encapsulation_abstraction\",\n      \"title\": \"Encapsulation and Abstraction\",\n      \"rationale\": \"These are two of the four pillars of OOP. Encapsulation helps in organizing code and protecting data, while abstraction focuses on simplifying complex systems. Mastering these concepts is crucial for writing robust and maintainable object-oriented code.\",\n      \"prerequisites\": [\n        \"classes_objects\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Access modifiers (public, private, protected)\",\n        \"Getters and Setters\",\n        \"Data hiding\",\n        \"Abstract classes\",\n        \"Interfaces\",\n        \"Information hiding\"\n      ]\n    },\n    {\n      \"node_id\": \"inheritance\",\n      \"title\": \"Inheritance\",\n      \"rationale\": \"Inheritance is another core OOP principle that promotes code reusability and establishes 'is-a' relationships between classes. It's vital for building hierarchical structures in your project and reducing redundancy.\",\n      \"prerequisites\": [\n        \"encapsulation_abstraction\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Extending classes\",\n        \"Superclass and subclass\",\n        \"Method overriding\",\n        \"The 'super' keyword\",\n        \"Single inheritance\",\n        \"Hierarchical inheritance\"\n      ]\n    },\n    {\n      \"node_id\": \"polymorphism\",\n      \"title\": \"Polymorphism\",\n      \"rationale\": \"Polymorphism, the fourth pillar of OOP, allows objects of different classes to be treated as objects of a common type. This flexibility is essential for writing adaptable and extensible code, a key aspect of building a scalable project.\",\n      \"prerequisites\": [\n        \"inheritance\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Method overloading\",\n        \"Dynamic method dispatch\",\n        \"Upcasting and downcasting\",\n        \"Runtime polymorphism\",\n        \"Compile-time polymorphism\"\n      ]\n    },\n    {\n      \"node_id\": \"arrays_collections\",\n      \"title\": \"Arrays and Collections\",\n      \"rationale\": \"To build a project, you'll need to manage collections of objects. This module introduces fundamental data structures in Java, enabling you to store, access, and manipulate multiple objects efficiently.\",\n      \"prerequisites\": [\n        \"classes_objects\"\n      ],\n      \"suggested_micro_topics\": [\n        \"One-dimensional arrays\",\n        \"Multi-dimensional arrays\",\n        \"ArrayList\",\n        \"LinkedList\",\n        \"Basic collection operations (add, remove, get, size)\"\n      ]\n    },\n    {\n      \"node_id\": \"exception_handling\",\n      \"title\": \"Exception Handling\",\n      \"rationale\": \"Robust projects need to gracefully handle errors and unexpected situations. This module teaches how to manage exceptions, preventing program crashes and improving user experience.\",\n      \"prerequisites\": [\n        \"java_basics\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Try-catch blocks\",\n        \"Finally block\",\n        \"Throwing exceptions\",\n        \"Custom exceptions\",\n        \"Checked vs. unchecked exceptions\"\n      ]\n    },\n    {\n      \"node_id\": \"basic_algorithms\",\n      \"title\": \"Basic Algorithms in OOP Context\",\n      \"rationale\": \"While not strictly an OOP concept, understanding basic algorithms is crucial for solving problems efficiently within an object-oriented framework. This module helps in applying OOP principles to algorithmic thinking.\",\n      \"prerequisites\": [\n        \"arrays_collections\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Searching algorithms (linear, binary)\",\n        \"Sorting algorithms (bubble, selection)\",\n        \"Recursion fundamentals\",\n        \"Time complexity (Big O notation)\"\n      ]\n    },\n    {\n      \"node_id\": \"project_application\",\n      \"title\": \"Building a Simple OOP Project\",\n      \"rationale\": \"The ultimate goal is to build a project. This module serves as the practical application of all learned OOP concepts, guiding the user through the process of designing and implementing a small object-oriented application.\",\n      \"prerequisites\": [\n        \"polymorphism\",\n        \"arrays_collections\",\n        \"exception_handling\",\n        \"basic_algorithms\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Project planning and design\",\n        \"Identifying classes and objects for a project\",\n        \"Implementing class relationships\",\n        \"Testing and debugging\",\n        \"Refactoring for better OOP design\"\n      ]\n    }\n  ]\n}",
+      "raw": "```json\n{\n  \"nodes\": [\n    {\n      \"node_id\": \"intro_data_science_ethics\",\n      \"title\": \"Introduction to Data Science & Ethics\",\n      \"rationale\": \"To begin a new career in data science, it's crucial to first understand what data science entails, the roles within the field, and the fundamental ethical considerations that underpin all data-related activities. This foundational module sets the stage for responsible and informed practice.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"What is Data Science?\",\n        \"Roles of a Data Scientist\",\n        \"Data Ethics Principles\",\n        \"Informed Consent and Data Ownership\",\n        \"Privacy, Transparency, and Anonymity\",\n        \"Data Validity and Algorithmic Fairness\",\n        \"Societal Consequences of Data Science\",\n        \"Code of Ethics in Data Science\"\n      ]\n    },\n    {\n      \"node_id\": \"foundational_programming_python\",\n      \"title\": \"Foundational Programming with Python\",\n      \"rationale\": \"Given little prior coding experience, a strong foundation in a versatile language like Python is essential. Python is widely used in data science for data manipulation, analysis, and machine learning, making it a critical first step for practical application.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"Python Syntax and Basic Data Types\",\n        \"Variables and Operators\",\n        \"Control Flow (If/Else, Loops)\",\n        \"Functions and Modules\",\n        \"Basic Data Structures (Lists, Tuples, Dictionaries, Sets)\",\n        \"Introduction to Python Libraries (NumPy for arrays, Pandas for DataFrames)\",\n        \"Reading and Writing Files\"\n      ]\n    },\n    {\n      \"node_id\": \"essential_math_statistics\",\n      \"title\": \"Essential Mathematics & Statistics for Data Science\",\n      \"rationale\": \"Data science is heavily rooted in statistical and mathematical concepts. Understanding these fundamentals is vital for interpreting data, building models, and making data-driven decisions, even with little prior experience.\",\n      \"prerequisites\": [],\n      \"suggested_micro_topics\": [\n        \"Descriptive Statistics (Mean, Median, Mode, Variance, Standard Deviation)\",\n        \"Probability Theory Basics (Events, Conditional Probability, Bayes' Theorem)\",\n        \"Probability Distributions (Normal, Binomial, Poisson)\",\n        \"Inferential Statistics (Hypothesis Testing, p-values, Confidence Intervals)\",\n        \"Sampling Techniques and Bias\",\n        \"Correlation and Covariance\",\n        \"Introduction to Linear Algebra (Vectors, Matrices - conceptual for ML)\"\n      ]\n    },\n    {\n      \"node_id\": \"data_collection_management\",\n      \"title\": \"Data Collection and Management Fundamentals\",\n      \"rationale\": \"Before any analysis can occur, data must be properly collected, acquired, and managed. This module covers the initial steps of a data science project, ensuring data is reliable and organized for subsequent steps.\",\n      \"prerequisites\": [\n        \"intro_data_science_ethics\",\n        \"foundational_programming_python\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Identifying Data Sources (APIs, Databases, Web Scraping)\",\n        \"Data Acquisition Methods\",\n        \"Data Storage Systems (Relational vs. Non-relational databases)\",\n        \"Basic SQL for Data Retrieval\",\n        \"Data Quality Management (Consistency, Completeness, Accuracy)\",\n        \"Data Security and Governance Principles\",\n        \"Data Infrastructure Concepts\"\n      ]\n    },\n    {\n      \"node_id\": \"data_wrangling_manipulation\",\n      \"title\": \"Data Wrangling and Manipulation\",\n      \"rationale\": \"Real-world data is rarely clean. This module teaches the practical skills needed to clean, transform, and prepare raw data for analysis, a crucial step that often consumes a significant portion of a data scientist's time.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"data_collection_management\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Handling Missing Values (Imputation, Deletion)\",\n        \"Detecting and Treating Outliers\",\n        \"Data Transformation Techniques (Scaling, Normalization)\",\n        \"Merging, Joining, and Concatenating Datasets (Pandas)\",\n        \"Reshaping Data (Pivoting, Melting)\",\n        \"Feature Engineering Basics (Creating new variables)\",\n        \"String Manipulation and Regular Expressions\"\n      ]\n    },\n    {\n      \"node_id\": \"eda_visualization\",\n      \"title\": \"Exploratory Data Analysis (EDA) & Visualization\",\n      \"rationale\": \"Once data is clean, EDA allows for initial insights and hypothesis generation. Data visualization is key to understanding patterns, communicating findings effectively, and making data accessible to others.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"essential_math_statistics\",\n        \"data_wrangling_manipulation\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Goals and Process of EDA\",\n        \"Univariate and Bivariate Analysis\",\n        \"Correlation Analysis\",\n        \"Data Visualization Principles\",\n        \"Plotting with Matplotlib and Seaborn (Histograms, Scatter Plots, Box Plots)\",\n        \"Interpreting Visualizations\",\n        \"Communicating Insights from EDA\"\n      ]\n    },\n    {\n      \"node_id\": \"intro_machine_learning\",\n      \"title\": \"Introduction to Machine Learning\",\n      \"rationale\": \"Machine learning is a core component of modern data science, enabling predictive modeling and pattern recognition. This module introduces fundamental concepts and algorithms, building upon statistical and programming foundations.\",\n      \"prerequisites\": [\n        \"foundational_programming_python\",\n        \"essential_math_statistics\",\n        \"data_wrangling_manipulation\",\n        \"eda_visualization\"\n      ],\n      \"suggested_micro_topics\": [\n        \"What is Machine Learning?\",\n        \"Supervised vs. Unsupervised Learning\",\n        \"Regression Algorithms (Linear Regression)\",\n        \"Classification Algorithms (Logistic Regression, K-Nearest Neighbors)\",\n        \"Model Training and Evaluation Metrics (Accuracy, Precision, Recall)\",\n        \"Overfitting and Underfitting\",\n        \"Introduction to Scikit-learn Library\"\n      ]\n    },\n    {\n      \"node_id\": \"real_world_projects_portfolio\",\n      \"title\": \"Real-World Projects & Portfolio Building\",\n      \"rationale\": \"To transition into a data science career, practical application of learned skills through projects is paramount. This module focuses on integrating all previous knowledge into tangible projects and showcasing them to potential employers.\",\n      \"prerequisites\": [\n        \"intro_machine_learning\"\n      ],\n      \"suggested_micro_topics\": [\n        \"Project Planning and Scoping\",\n        \"Finding and Sourcing Project Data\",\n        \"End-to-End Data Science Project Workflow\",\n        \"Version Control with Git and GitHub Basics\",\n        \"Presenting Project Findings and Insights\",\n        \"Building a Data Science Portfolio\",\n        \"Networking and Career Strategies\"\n      ]\n    }\n  ]\n}\n```",
       "json_dict": null,
       "pydantic": {
         "nodes": [
           {
-            "node_id": "intro_to_oop",
-            "title": "Introduction to Object-Oriented Programming",
-            "rationale": "This module provides a foundational understanding of what Object-Oriented Programming is, its core concepts, and why it's a powerful paradigm for building software. It's essential for a complete beginner to grasp these basics before diving into practical application.",
+            "node_id": "intro_data_science_ethics",
+            "title": "Introduction to Data Science & Ethics",
+            "rationale": "To begin a new career in data science, it's crucial to first understand what data science entails, the roles within the field, and the fundamental ethical considerations that underpin all data-related activities. This foundational module sets the stage for responsible and informed practice.",
             "prerequisites": [],
             "suggested_micro_topics": [
-              "What is OOP?",
-              "Procedural vs. Object-Oriented Programming",
-              "Benefits of OOP",
-              "Key OOP terminology (class, object, instance, method, attribute)"
+              "What is Data Science?",
+              "Roles of a Data Scientist",
+              "Data Ethics Principles",
+              "Informed Consent and Data Ownership",
+              "Privacy, Transparency, and Anonymity",
+              "Data Validity and Algorithmic Fairness",
+              "Societal Consequences of Data Science",
+              "Code of Ethics in Data Science"
             ]
           },
           {
-            "node_id": "java_basics",
-            "title": "Java Programming Language Fundamentals",
-            "rationale": "To implement OOP concepts, a beginner needs a solid grasp of a programming language that supports OOP. Java is a widely used language for teaching and applying OOP, making it an excellent choice for a beginner to build a project. This module covers the essential syntax and constructs.",
-            "prerequisites": [
-              "intro_to_oop"
-            ],
+            "node_id": "foundational_programming_python",
+            "title": "Foundational Programming with Python",
+            "rationale": "Given little prior coding experience, a strong foundation in a versatile language like Python is essential. Python is widely used in data science for data manipulation, analysis, and machine learning, making it a critical first step for practical application.",
+            "prerequisites": [],
             "suggested_micro_topics": [
-              "Java syntax basics",
-              "Primitive data types",
-              "Variables and operators",
-              "Conditional statements (if-else, switch)",
-              "Loops (for, while, do-while)",
-              "Console input/output",
-              "Methods and functions"
+              "Python Syntax and Basic Data Types",
+              "Variables and Operators",
+              "Control Flow (If/Else, Loops)",
+              "Functions and Modules",
+              "Basic Data Structures (Lists, Tuples, Dictionaries, Sets)",
+              "Introduction to Python Libraries (NumPy for arrays, Pandas for DataFrames)",
+              "Reading and Writing Files"
             ]
           },
           {
-            "node_id": "classes_objects",
-            "title": "Classes and Objects in Java",
-            "rationale": "This module is the cornerstone of OOP. Understanding how to define classes and create objects is fundamental to building any object-oriented project. It directly applies the theoretical knowledge from the introduction to practical coding.",
-            "prerequisites": [
-              "java_basics"
-            ],
+            "node_id": "essential_math_statistics",
+            "title": "Essential Mathematics & Statistics for Data Science",
+            "rationale": "Data science is heavily rooted in statistical and mathematical concepts. Understanding these fundamentals is vital for interpreting data, building models, and making data-driven decisions, even with little prior experience.",
+            "prerequisites": [],
             "suggested_micro_topics": [
-              "Defining classes",
-              "Creating objects (instantiation)",
-              "Attributes and behaviors (fields and methods)",
-              "Constructors",
-              "The 'this' keyword",
-              "Object references"
+              "Descriptive Statistics (Mean, Median, Mode, Variance, Standard Deviation)",
+              "Probability Theory Basics (Events, Conditional Probability, Bayes' Theorem)",
+              "Probability Distributions (Normal, Binomial, Poisson)",
+              "Inferential Statistics (Hypothesis Testing, p-values, Confidence Intervals)",
+              "Sampling Techniques and Bias",
+              "Correlation and Covariance",
+              "Introduction to Linear Algebra (Vectors, Matrices - conceptual for ML)"
             ]
           },
           {
-            "node_id": "encapsulation_abstraction",
-            "title": "Encapsulation and Abstraction",
-            "rationale": "These are two of the four pillars of OOP. Encapsulation helps in organizing code and protecting data, while abstraction focuses on simplifying complex systems. Mastering these concepts is crucial for writing robust and maintainable object-oriented code.",
+            "node_id": "data_collection_management",
+            "title": "Data Collection and Management Fundamentals",
+            "rationale": "Before any analysis can occur, data must be properly collected, acquired, and managed. This module covers the initial steps of a data science project, ensuring data is reliable and organized for subsequent steps.",
             "prerequisites": [
-              "classes_objects"
+              "intro_data_science_ethics",
+              "foundational_programming_python"
             ],
             "suggested_micro_topics": [
-              "Access modifiers (public, private, protected)",
-              "Getters and Setters",
-              "Data hiding",
-              "Abstract classes",
-              "Interfaces",
-              "Information hiding"
+              "Identifying Data Sources (APIs, Databases, Web Scraping)",
+              "Data Acquisition Methods",
+              "Data Storage Systems (Relational vs. Non-relational databases)",
+              "Basic SQL for Data Retrieval",
+              "Data Quality Management (Consistency, Completeness, Accuracy)",
+              "Data Security and Governance Principles",
+              "Data Infrastructure Concepts"
             ]
           },
           {
-            "node_id": "inheritance",
-            "title": "Inheritance",
-            "rationale": "Inheritance is another core OOP principle that promotes code reusability and establishes 'is-a' relationships between classes. It's vital for building hierarchical structures in your project and reducing redundancy.",
+            "node_id": "data_wrangling_manipulation",
+            "title": "Data Wrangling and Manipulation",
+            "rationale": "Real-world data is rarely clean. This module teaches the practical skills needed to clean, transform, and prepare raw data for analysis, a crucial step that often consumes a significant portion of a data scientist's time.",
             "prerequisites": [
-              "encapsulation_abstraction"
+              "foundational_programming_python",
+              "data_collection_management"
             ],
             "suggested_micro_topics": [
-              "Extending classes",
-              "Superclass and subclass",
-              "Method overriding",
-              "The 'super' keyword",
-              "Single inheritance",
-              "Hierarchical inheritance"
+              "Handling Missing Values (Imputation, Deletion)",
+              "Detecting and Treating Outliers",
+              "Data Transformation Techniques (Scaling, Normalization)",
+              "Merging, Joining, and Concatenating Datasets (Pandas)",
+              "Reshaping Data (Pivoting, Melting)",
+              "Feature Engineering Basics (Creating new variables)",
+              "String Manipulation and Regular Expressions"
             ]
           },
           {
-            "node_id": "polymorphism",
-            "title": "Polymorphism",
-            "rationale": "Polymorphism, the fourth pillar of OOP, allows objects of different classes to be treated as objects of a common type. This flexibility is essential for writing adaptable and extensible code, a key aspect of building a scalable project.",
+            "node_id": "eda_visualization",
+            "title": "Exploratory Data Analysis (EDA) & Visualization",
+            "rationale": "Once data is clean, EDA allows for initial insights and hypothesis generation. Data visualization is key to understanding patterns, communicating findings effectively, and making data accessible to others.",
             "prerequisites": [
-              "inheritance"
+              "foundational_programming_python",
+              "essential_math_statistics",
+              "data_wrangling_manipulation"
             ],
             "suggested_micro_topics": [
-              "Method overloading",
-              "Dynamic method dispatch",
-              "Upcasting and downcasting",
-              "Runtime polymorphism",
-              "Compile-time polymorphism"
+              "Goals and Process of EDA",
+              "Univariate and Bivariate Analysis",
+              "Correlation Analysis",
+              "Data Visualization Principles",
+              "Plotting with Matplotlib and Seaborn (Histograms, Scatter Plots, Box Plots)",
+              "Interpreting Visualizations",
+              "Communicating Insights from EDA"
             ]
           },
           {
-            "node_id": "arrays_collections",
-            "title": "Arrays and Collections",
-            "rationale": "To build a project, you'll need to manage collections of objects. This module introduces fundamental data structures in Java, enabling you to store, access, and manipulate multiple objects efficiently.",
+            "node_id": "intro_machine_learning",
+            "title": "Introduction to Machine Learning",
+            "rationale": "Machine learning is a core component of modern data science, enabling predictive modeling and pattern recognition. This module introduces fundamental concepts and algorithms, building upon statistical and programming foundations.",
             "prerequisites": [
-              "classes_objects"
+              "foundational_programming_python",
+              "essential_math_statistics",
+              "data_wrangling_manipulation",
+              "eda_visualization"
             ],
             "suggested_micro_topics": [
-              "One-dimensional arrays",
-              "Multi-dimensional arrays",
-              "ArrayList",
-              "LinkedList",
-              "Basic collection operations (add, remove, get, size)"
+              "What is Machine Learning?",
+              "Supervised vs. Unsupervised Learning",
+              "Regression Algorithms (Linear Regression)",
+              "Classification Algorithms (Logistic Regression, K-Nearest Neighbors)",
+              "Model Training and Evaluation Metrics (Accuracy, Precision, Recall)",
+              "Overfitting and Underfitting",
+              "Introduction to Scikit-learn Library"
             ]
           },
           {
-            "node_id": "exception_handling",
-            "title": "Exception Handling",
-            "rationale": "Robust projects need to gracefully handle errors and unexpected situations. This module teaches how to manage exceptions, preventing program crashes and improving user experience.",
+            "node_id": "real_world_projects_portfolio",
+            "title": "Real-World Projects & Portfolio Building",
+            "rationale": "To transition into a data science career, practical application of learned skills through projects is paramount. This module focuses on integrating all previous knowledge into tangible projects and showcasing them to potential employers.",
             "prerequisites": [
-              "java_basics"
+              "intro_machine_learning"
             ],
             "suggested_micro_topics": [
-              "Try-catch blocks",
-              "Finally block",
-              "Throwing exceptions",
-              "Custom exceptions",
-              "Checked vs. unchecked exceptions"
-            ]
-          },
-          {
-            "node_id": "basic_algorithms",
-            "title": "Basic Algorithms in OOP Context",
-            "rationale": "While not strictly an OOP concept, understanding basic algorithms is crucial for solving problems efficiently within an object-oriented framework. This module helps in applying OOP principles to algorithmic thinking.",
-            "prerequisites": [
-              "arrays_collections"
-            ],
-            "suggested_micro_topics": [
-              "Searching algorithms (linear, binary)",
-              "Sorting algorithms (bubble, selection)",
-              "Recursion fundamentals",
-              "Time complexity (Big O notation)"
-            ]
-          },
-          {
-            "node_id": "project_application",
-            "title": "Building a Simple OOP Project",
-            "rationale": "The ultimate goal is to build a project. This module serves as the practical application of all learned OOP concepts, guiding the user through the process of designing and implementing a small object-oriented application.",
-            "prerequisites": [
-              "polymorphism",
-              "arrays_collections",
-              "exception_handling",
-              "basic_algorithms"
-            ],
-            "suggested_micro_topics": [
-              "Project planning and design",
-              "Identifying classes and objects for a project",
-              "Implementing class relationships",
-              "Testing and debugging",
-              "Refactoring for better OOP design"
+              "Project Planning and Scoping",
+              "Finding and Sourcing Project Data",
+              "End-to-End Data Science Project Workflow",
+              "Version Control with Git and GitHub Basics",
+              "Presenting Project Findings and Insights",
+              "Building a Data Science Portfolio",
+              "Networking and Career Strategies"
             ]
           }
         ]
