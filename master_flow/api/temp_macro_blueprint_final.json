@@ -1,0 +1,158 @@
+{
+  "nodes": [
+    {
+      "node_id": "intro_to_oop",
+      "title": "Introduction to Object-Oriented Programming",
+      "rationale": "This module provides a foundational understanding of what Object-Oriented Programming is, its core concepts, and why it's a powerful paradigm for building software. It's essential for a complete beginner to grasp these basics before diving into practical application.",
+      "prerequisites": [],
+      "suggested_micro_topics": [
+        "What is OOP?",
+        "Procedural vs. Object-Oriented Programming",
+        "Benefits of OOP",
+        "Key OOP terminology (class, object, instance, method, attribute)"
+      ]
+    },
+    {
+      "node_id": "java_basics",
+      "title": "Java Programming Language Fundamentals",
+      "rationale": "To implement OOP concepts, a beginner needs a solid grasp of a programming language that supports OOP. Java is a widely used language for teaching and applying OOP, making it an excellent choice for a beginner to build a project. This module covers the essential syntax and constructs.",
+      "prerequisites": [
+        "intro_to_oop"
+      ],
+      "suggested_micro_topics": [
+        "Java syntax basics",
+        "Primitive data types",
+        "Variables and operators",
+        "Conditional statements (if-else, switch)",
+        "Loops (for, while, do-while)",
+        "Console input/output",
+        "Methods and functions"
+      ]
+    },
+    {
+      "node_id": "classes_objects",
+      "title": "Classes and Objects in Java",
+      "rationale": "This module is the cornerstone of OOP. Understanding how to define classes and create objects is fundamental to building any object-oriented project. It directly applies the theoretical knowledge from the introduction to practical coding.",
+      "prerequisites": [
+        "java_basics"
+      ],
+      "suggested_micro_topics": [
+        "Defining classes",
+        "Creating objects (instantiation)",
+        "Attributes and behaviors (fields and methods)",
+        "Constructors",
+        "The 'this' keyword",
+        "Object references"
+      ]
+    },
+    {
+      "node_id": "encapsulation_abstraction",
+      "title": "Encapsulation and Abstraction",
+      "rationale": "These are two of the four pillars of OOP. Encapsulation helps in organizing code and protecting data, while abstraction focuses on simplifying complex systems. Mastering these concepts is crucial for writing robust and maintainable object-oriented code.",
+      "prerequisites": [
+        "classes_objects"
+      ],
+      "suggested_micro_topics": [
+        "Access modifiers (public, private, protected)",
+        "Getters and Setters",
+        "Data hiding",
+        "Abstract classes",
+        "Interfaces",
+        "Information hiding"
+      ]
+    },
+    {
+      "node_id": "inheritance",
+      "title": "Inheritance",
+      "rationale": "Inheritance is another core OOP principle that promotes code reusability and establishes 'is-a' relationships between classes. It's vital for building hierarchical structures in your project and reducing redundancy.",
+      "prerequisites": [
+        "encapsulation_abstraction"
+      ],
+      "suggested_micro_topics": [
+        "Extending classes",
+        "Superclass and subclass",
+        "Method overriding",
+        "The 'super' keyword",
+        "Single inheritance",
+        "Hierarchical inheritance"
+      ]
+    },
+    {
+      "node_id": "polymorphism",
+      "title": "Polymorphism",
+      "rationale": "Polymorphism, the fourth pillar of OOP, allows objects of different classes to be treated as objects of a common type. This flexibility is essential for writing adaptable and extensible code, a key aspect of building a scalable project.",
+      "prerequisites": [
+        "inheritance"
+      ],
+      "suggested_micro_topics": [
+        "Method overloading",
+        "Dynamic method dispatch",
+        "Upcasting and downcasting",
+        "Runtime polymorphism",
+        "Compile-time polymorphism"
+      ]
+    },
+    {
+      "node_id": "arrays_collections",
+      "title": "Arrays and Collections",
+      "rationale": "To build a project, you'll need to manage collections of objects. This module introduces fundamental data structures in Java, enabling you to store, access, and manipulate multiple objects efficiently.",
+      "prerequisites": [
+        "classes_objects"
+      ],
+      "suggested_micro_topics": [
+        "One-dimensional arrays",
+        "Multi-dimensional arrays",
+        "ArrayList",
+        "LinkedList",
+        "Basic collection operations (add, remove, get, size)"
+      ]
+    },
+    {
+      "node_id": "exception_handling",
+      "title": "Exception Handling",
+      "rationale": "Robust projects need to gracefully handle errors and unexpected situations. This module teaches how to manage exceptions, preventing program crashes and improving user experience.",
+      "prerequisites": [
+        "java_basics"
+      ],
+      "suggested_micro_topics": [
+        "Try-catch blocks",
+        "Finally block",
+        "Throwing exceptions",
+        "Custom exceptions",
+        "Checked vs. unchecked exceptions"
+      ]
+    },
+    {
+      "node_id": "basic_algorithms",
+      "title": "Basic Algorithms in OOP Context",
+      "rationale": "While not strictly an OOP concept, understanding basic algorithms is crucial for solving problems efficiently within an object-oriented framework. This module helps in applying OOP principles to algorithmic thinking.",
+      "prerequisites": [
+        "arrays_collections"
+      ],
+      "suggested_micro_topics": [
+        "Searching algorithms (linear, binary)",
+        "Sorting algorithms (bubble, selection)",
+        "Recursion fundamentals",
+        "Time complexity (Big O notation)"
+      ]
+    },
+    {
+      "node_id": "project_application",
+      "title": "Building a Simple OOP Project",
+      "rationale": "The ultimate goal is to build a project. This module serves as the practical application of all learned OOP concepts, guiding the user through the process of designing and implementing a small object-oriented application.",
+      "prerequisites": [
+        "polymorphism",
+        "arrays_collections",
+        "exception_handling",
+        "basic_algorithms"
+      ],
+      "suggested_micro_topics": [
+        "Project planning and design",
+        "Identifying classes and objects for a project",
+        "Implementing class relationships",
+        "Testing and debugging",
+        "Refactoring for better OOP design"
+      ]
+    }
+  ]
+}
