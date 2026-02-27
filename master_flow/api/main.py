@@ -9,6 +9,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from master_flow.main import MasterFlow
 
+# --- ADDED FOR LOGGING ---
+import re
+class DualLogger:
+    def __init__(self, original_stdout, filename):
+        self.original_stdout = original_stdout
+        self.log_file = open(filename, "a", encoding="utf-8")
+        self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        
+    def write(self, text):
+        self.original_stdout.write(text)
+        clean_text = self.ansi_escape.sub('', text)
+        self.log_file.write(clean_text)
+        self.log_file.flush()
+        
+    def flush(self):
+        self.original_stdout.flush()
+        self.log_file.flush()
+
+sys.stdout = DualLogger(sys.stdout, "temp_master_flow.log")
+sys.stderr = sys.stdout
+# -------------------------
+
 from typing import Optional
 from master_flow.model.system_state import SystemState
 
@@ -37,7 +59,7 @@ async def start_macro_endpoint(req: StartMacroRequest):
     if not req.session_id:
         raise HTTPException(status_code=400, detail="session_id is required.")
         
-    flow = MasterFlow()
+    flow = MasterFlow(tracing=True)
     
     # Instantiate persistence layer to check if a session already exists
     from crewai.flow.persistence import SQLiteFlowPersistence
@@ -63,8 +85,14 @@ async def start_macro_endpoint(req: StartMacroRequest):
     
     response_data = result if isinstance(result, dict) else {"status": "completed", "result": result}
     
-    return {
+    final_response = {
         "response": response_data,
         "state": flow.state.model_dump(),
         "session_id": flow.state.id
     }
+    
+    import json
+    with open("temp_master_flow_output.json", "w", encoding="utf-8") as f:
+        json.dump(final_response, f, indent=2)
+        
+    return final_response

@@ -42,9 +42,6 @@ export default function RoadmapsPage() {
     fetchRoadmaps();
   }, []);
 
-  const getSkillSlug = (topic: string) =>
-    topic.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ +/g, '-');
-
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -117,7 +114,6 @@ export default function RoadmapsPage() {
             className="grid grid-cols-1 md:grid-cols-2 gap-5"
           >
             {roadmaps.map((rm) => {
-              const slug = getSkillSlug(rm.topic);
               const phases = getPhaseCount(rm.content);
               return (
                 <motion.div
@@ -125,7 +121,7 @@ export default function RoadmapsPage() {
                   variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
                 >
                   <Link
-                    href={`/skill/${slug}/overview`}
+                    href={`/skill/${rm.id}/overview`}
                     className="group block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-yellow-300 transition-all p-6"
                   >
                     {/* Topic Badge */}

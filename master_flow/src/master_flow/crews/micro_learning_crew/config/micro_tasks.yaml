@@ -1,0 +1,45 @@
+scrape_task:
+  description: >
+    We are building content for the Macro Node: "{macro_title}".
+    The specific sub-topics to research are: {micro_topics_list}.
+    
+    Your ONLY job is to find the best resource links using `TavilySearchTool`. Do NOT attempt to scrape or read the content inside the websites.
+    
+    For EACH sub-topic, perform two highly specific searches using `TavilySearchTool`:
+    
+    1. THE DOC SEARCH: Query -> search for the documentation or article of the sub-topic. 
+       Extract the top 1 or 2 relevant URLs and their titles.
+    2. THE VIDEO SEARCH: Query -> search for the video tutorial or explanation of the sub-topic in youtube.
+       Extract the top 1 or 2 relevant YouTube URLs and their titles.
+    3. Identify whether the links found are relevant to the user's goal and experience level.do not include it if it dont match
+    
+    IMPORTANT RULES:
+    - You are exclusively a link fetcher. Do NOT use website scraping tools to read the content.
+    - If Tavily returns irrelevant results or nothing at all for a specific search, SKIP IT. It is perfectly fine if a sub-topic has no video or no article.
+    - Do not hallucinate or make up URLs.
+  expected_output: >
+    A perfectly structured FullScrapeResult object containing the found URLs, titles, and resource types ('youtube' or 'article') for each sub-topic. If a sub-topic lacks a certain resource, omit it from the list.
+  agent: scraper
+  
+educate_task:
+  description: >
+    Review the resources curated by the Scraper. 
+    Now, write the theoretical explanation for EACH of these micro-topics: {micro_topics_list}.
+    
+    Keep the user's experience level ({experience}) and goal ({goal}) in mind.
+    Make the theory highly engaging. Explain the theory in details, (e.g. what is it, how it works, and why it matters).
+  expected_output: >
+    A comprehensive document containing the written theory for every requested micro-topic.
+  agent: educator
+
+estimate_and_compile_task:
+  description: >
+    Review the Scraper's resources and the Educator's theory for the Macro Node: "{macro_title}" (ID: {node_id}).
+    
+    1. Estimate the time to read the Educator's theory (~250 words/min).
+    2. Estimate the time to consume each external resource (e.g., standard tech article = 5 mins, standard tutorial video = 10 mins unless specified).
+    3. Calculate the total time for each micro-topic, and the grand total for the macro node.
+    4. Compile everything perfectly into the requested JSON schema.
+  expected_output: >
+    The final, perfectly formatted MacroNodeContent JSON object.
+  agent: estimator

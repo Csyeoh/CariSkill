@@ -5,25 +5,23 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getSkillTrack, SkillTrack } from '@/lib/roadmap-data';
 import { notFound, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Lock, Play, Rocket, Hand, Clock, Quote,
   Footprints, Trophy, Loader2
 } from 'lucide-react';
-import FloatingChat from '@/components/FloatingChat';
 
 export default function SkillOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
 
   const [data, setData] = useState<SkillTrack | null>(null);
   const [loading, setLoading] = useState(true);
-  const [associatedChatId, setAssociatedChatId] = useState<string | null>(null);
-  const [roadmapId, setRoadmapId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       let stringifiedRoadmap = localStorage.getItem(`roadmap_${id}`);
+      let dbTopic: string | null = null;
 
       // Try fetching from Supabase if logged in.
       try {
@@ -32,59 +30,19 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-          const { data: roadmaps, error } = await supabase
+          const { data: roadmaps } = await supabase
             .from('roadmaps')
-            .select('id, content')
+            .select('id, content, topic')
             .eq('user_id', user.id)
-            // attempt matching the topic to the id slug 
-            .ilike('topic', `%${id.replace(/-/g, ' ')}%`)
-            .order('created_at', { ascending: false })
+            .eq('id', id)
             .limit(1);
 
           if (roadmaps && roadmaps.length > 0) {
             stringifiedRoadmap = typeof roadmaps[0].content === 'string'
               ? roadmaps[0].content
               : JSON.stringify(roadmaps[0].content);
-            setRoadmapId(roadmaps[0].id);
+            dbTopic = roadmaps[0].topic;
           }
-
-          // Fetch associated chat session — try localStorage first, then keyword match, then most recent
-          const localChatId = localStorage.getItem(`chat_for_${id}`);
-          if (localChatId) {
-            setAssociatedChatId(localChatId);
-          } else {
-            const searchTerms = id.replace(/-/g, ' ').split(' ').filter((w: string) => w.length > 3);
-            let chatId: string | null = null;
-
-            // Try each significant word from the slug until we find a match
-            for (const term of searchTerms) {
-              const { data: chatData } = await supabase
-                .from('chat')
-                .select('id')
-                .eq('user_id', user.id)
-                .ilike('title', `%${term}%`)
-                .order('created_at', { ascending: false })
-                .limit(1);
-              if (chatData && chatData.length > 0) {
-                chatId = chatData[0].id;
-                break;
-              }
-            }
-
-            // Final fallback: use the most recently created chat session
-            if (!chatId) {
-              const { data: latestChat } = await supabase
-                .from('chat')
-                .select('id')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(1);
-              if (latestChat && latestChat.length > 0) chatId = latestChat[0].id;
-            }
-
-            if (chatId) setAssociatedChatId(chatId);
-          }
-
         }
       } catch (err) {
         console.error("Supabase fetch error:", err);
@@ -104,6 +62,8 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             learningPathData = parsed.phases;
           } else if (parsed?.roadmap?.phases && Array.isArray(parsed.roadmap.phases)) {
             learningPathData = parsed.roadmap.phases;
+          } else if (parsed?.roadmap?.nodes && Array.isArray(parsed.roadmap.nodes)) {
+            learningPathData = parsed.roadmap.nodes;
           } else if (parsed?.learning_path && Array.isArray(parsed.learning_path)) {
             learningPathData = parsed.learning_path;
           } else if (parsed?.roadmap?.learning_path && Array.isArray(parsed.roadmap.learning_path)) {
@@ -140,7 +100,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           // Transform CrewAI JSON format to standard frontend SkillTrack format
           const transformedData: SkillTrack = {
             id: id,
-            title: parsed?.topic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            title: parsed?.topic || dbTopic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             tagline: parsed?.description || parsed?.roadmap?.description || "Your AI-Generated Learning Path",
             progress: 0,
             estimatedTime: "Adaptive",
@@ -308,7 +268,10 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                   </div>
 
                   {/* Module Card */}
-                  <div className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left flex-1 min-w-[250px] w-full max-w-lg backdrop-blur-md hover:border-[#FFD700] transition-colors group">
+                  <Link
+                    href={`/skill/${id}/${module.id}/summary`}
+                    className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left flex-1 min-w-[250px] w-full max-w-lg backdrop-blur-md hover:border-[#FFD700] transition-colors group cursor-pointer block"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-gray-900 font-display text-xl group-hover:text-yellow-600 transition-colors">
                         {module.title}
@@ -336,7 +299,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                         </ul>
                       </div>
                     )}
-                  </div>
+                  </Link>
                 </motion.div>
               ))}
             </div>
@@ -388,8 +351,6 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </main>
-
-      {associatedChatId && <FloatingChat chatId={associatedChatId} roadmapTopic={data?.title} roadmapId={roadmapId ?? undefined} />}
 
       <Footer />
     </div>

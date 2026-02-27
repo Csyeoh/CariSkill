@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { createClient } from '@/utils/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, Sparkles, Brain, Lightbulb,
@@ -20,7 +22,9 @@ const messages = [
 
 function LoadingRoadmapContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const [topic, setTopic] = useState("");
+  const hasGenerated = useRef(false);
 
   const [messageIndex, setMessageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -28,31 +32,49 @@ function LoadingRoadmapContent() {
   useEffect(() => {
     // Read from localStorage without searchParams
     const payloadStr = localStorage.getItem('generation_payload');
-    const payload = payloadStr ? JSON.parse(payloadStr) : {};
+    let payload = { topic: "", experience: "Beginner", goal: "None", constraints: "None", session_id: "" };
+    try {
+      if (payloadStr) payload = JSON.parse(payloadStr);
+    } catch (e) { }
+
     const activeTopic = payload.topic || "";
     setTopic(activeTopic);
-    const skillId = activeTopic.toLowerCase().replace(/ /g, '-');
 
+    // ALWAYS start the intervals regardless of StrictMode so the UI updates
     const messageInterval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % messages.length);
     }, 1500);
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => (prev >= 95 ? 95 : prev + 1));
-    }, 600); // Slower progress while waiting for 50s backend
+    }, 950); // Slower progress (95 * ~950ms ≈ 90s)
 
     const generateRoadmap = async () => {
       try {
-        const payloadStr = localStorage.getItem('generation_payload');
-        const payload = payloadStr ? JSON.parse(payloadStr) : {};
-        const activeTopic = payload.topic || "";
         const experience = payload.experience || "Beginner";
         const goal = payload.goal || "None";
         const constraints = payload.constraints || "None";
         const sessionId = payload.session_id || `temp-${Date.now()}`;
 
-        const workerUrl = 'http://localhost:8000';
-        const response = await fetch(`${workerUrl}/api/start_macro`, {
+        let targetSkillId = activeTopic.toLowerCase().replace(/ /g, '-');
+        const supabase = createClient();
+        let dbRecordId: string | null = null;
+
+        if (user) {
+          const { data: insertData, error: preInsertError } = await supabase.from('roadmaps').insert({
+            user_id: user.id,
+            topic: activeTopic,
+            content: { status: "generating" }
+          }).select().single();
+
+          if (!preInsertError && insertData) {
+            dbRecordId = insertData.id;
+            targetSkillId = insertData.id;
+          }
+        }
+
+        const Url = 'http://localhost:8000';
+        const response = await fetch(`${Url}/api/start_macro`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -73,10 +95,6 @@ function LoadingRoadmapContent() {
         const rawResult = await response.json();
         console.log("Raw API Response:", rawResult);
 
-        if (rawResult.status === "error") {
-          console.error("Backend returned an explicit error:", rawResult.message);
-          throw new Error(rawResult.message || "The AI generated an invalid response.");
-        }
 
         let parsedRoadmap;
         try {
@@ -91,64 +109,60 @@ function LoadingRoadmapContent() {
           parsedRoadmap = typeof fallbackStr === 'string' ? { error_unparsed_raw_text: fallbackStr } : fallbackStr;
         }
 
-        if (!parsedRoadmap) {
-          throw new Error("Parsed roadmap payload is null or undefined!");
+        if (!parsedRoadmap) throw new Error("Parsed roadmap payload is null or undefined!");
+
+        // Update the Supabase record with the actual data if we pre-inserted it
+        if (user && dbRecordId) {
+          const finalPayload = {
+            topic: activeTopic,
+            roadmap: parsedRoadmap
+          };
+          const { error: updateError } = await supabase.from('roadmaps').update({
+            content: finalPayload
+          }).eq('id', dbRecordId);
+
+          if (updateError) {
+            console.error("Failed to update roadmap in Supabase:", updateError);
+          }
+
+          // Insert micro topics contents if present
+          const courseContent = rawResult.state?.completed_modules || rawResult.response?.course_content || [];
+          if (courseContent && courseContent.length > 0) {
+            const microInsertions = courseContent.map((module: any) => ({
+              roadmap_id: dbRecordId,
+              macro_node_id: module.node_id,
+              content: module
+            }));
+
+            const { error: microInsertError } = await supabase
+              .from('micro_topics_contents')
+              .insert(microInsertions);
+
+            if (microInsertError) {
+              console.error("Failed to insert micro topics into Supabase:", microInsertError);
+            }
+          }
         }
 
         // Always save to localStorage as a fallback for immediate rendering/guests
-        localStorage.setItem(`roadmap_${skillId}`, JSON.stringify(parsedRoadmap));
-
-        // Try to save to Supabase if the user is logged in
-        try {
-          const { createClient } = await import('@/utils/supabase/client');
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-
-          if (user) {
-            console.log("Attempting to save to Supabase for User:", user.id);
-
-            // The frontend overview page expects an object structure, but Supabase stores it in a jsonb column
-            // We should wrap the payload to ensure it is always a valid JSON object matching our schema
-            const finalPayload = {
-              topic: topic,
-              roadmap: parsedRoadmap
-            };
-
-            const { error: insertError } = await supabase.from('roadmaps').insert({
-              user_id: user.id,
-              topic: topic,
-              content: finalPayload
-            });
-            if (insertError) {
-              console.error("Failed to save roadmap to Supabase | Code:", insertError.code, "Message:", insertError.message, "Details:", insertError.details);
-              // Fallback: try inserting as stringified json
-              const { error: retryError } = await supabase.from('roadmaps').insert({
-                user_id: user.id,
-                topic: topic,
-                content: JSON.stringify(finalPayload)
-              });
-              if (retryError) console.error("Retry insert failed | Code:", retryError.code, "Message:", retryError.message, "Details:", retryError.details);
-            } else {
-              console.log("Roadmap permanently saved to Supabase cloud!");
-            }
-          }
-        } catch (dbError) {
-          console.error("Supabase integration error:", dbError);
-        }
+        localStorage.setItem(`roadmap_${targetSkillId}`, JSON.stringify(parsedRoadmap));
 
         setProgress(100);
         setTimeout(() => {
-          router.push(`/skill/${skillId}/overview`);
+          router.push(`/skill/${targetSkillId}/overview`);
         }, 500);
 
       } catch (error: any) {
         console.error("Roadmap generation failed:", error);
-        // Display the direct 500 error or CrewAI Error to the user
         alert(`Generation Failed: ${error.message}`);
       }
     };
 
-    generateRoadmap();
+    // Only trigger roadmap generation once
+    if (!hasGenerated.current) {
+      hasGenerated.current = true;
+      generateRoadmap();
+    }
 
     return () => {
       clearInterval(messageInterval);

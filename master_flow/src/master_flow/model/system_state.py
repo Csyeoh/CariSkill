@@ -16,7 +16,10 @@ class SystemState(BaseModel):
     goal: str = ""
     constraints: str = ""
 
-    # --- NEW MACRO PLANNING FIELDS ---
+    # --- MACRO PLANNING FIELDS ---
     blueprint: Optional[Dict] = None
-    macro_critic_feedback: str = "None"
-    macro_retry_count: int = 0
+
+    # --- MICRO LEARNING FIELDS ---
+    pending_nodes: list = []
+    completed_modules: list = []
+    chat_history: list = []

@@ -10,8 +10,3 @@ class MacroNode(BaseModel):
 
 class Blueprint(BaseModel):
     nodes: List[MacroNode] = Field(..., description="The complete, ordered skill tree DAG.")
-
-class QAEvaluation(BaseModel):
-    is_approved: bool = Field(..., description="True if the blueprint perfectly matches the user profile and has valid logic. False otherwise.")
-    feedback: str = Field(..., description="If rejected, exact instructions on what the Architect needs to fix. 'None' if approved.")
-    blueprint: Blueprint = Field(..., description="The blueprint being evaluated.")

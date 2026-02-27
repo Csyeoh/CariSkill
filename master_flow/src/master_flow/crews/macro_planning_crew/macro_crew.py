@@ -1,7 +1,6 @@
 import os
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
-from master_flow.model.macro_models import QAEvaluation
 from master_flow.model.macro_models import Blueprint
 from master_flow.tools.search_tools import search_syllabi, web_syllabus_search
 
@@ -28,15 +27,6 @@ class MacroPlanningCrew():
             allow_delegation=False
         )
 
-    @agent
-    def qa_auditor(self) -> Agent:
-        return Agent(
-            config=self.agents_config['qa_auditor'],
-            verbose=True,
-            llm=self.get_llm(),
-            allow_delegation=False
-        )
-
     @task
     def blueprint_task(self) -> Task:
         return Task(
@@ -44,18 +34,12 @@ class MacroPlanningCrew():
             output_pydantic=Blueprint
         )
 
-    @task
-    def qa_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['qa_task'],
-            output_pydantic=QAEvaluation # Forces output into our strict QA model
-        )
-
     @crew
     def crew(self) -> Crew:
         return Crew(
-            agents=[self.architect(), self.qa_auditor()],
-            tasks=[self.blueprint_task(), self.qa_task()],
+            agents=[self.architect()],
+            tasks=[self.blueprint_task()],
             verbose=True,
+            output_log_file="macro_planning.log",
             max_rpm=15
         )

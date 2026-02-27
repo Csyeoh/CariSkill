@@ -3,8 +3,8 @@ import { z } from "zod";
 export const setupResponseSchema = z.object({
     reply: z.string().describe("Your friendly message or next question to the user. Use **bold** and bullet points."),
     ready_to_generate: z.boolean().describe("Whether you have enough information to generate a roadmap plan and extract all fields."),
-    topic: z.string().describe("The specific skills, language, or topic the user wants to learn (e.g. 'Python for Data Science').").optional(),
-    experience: z.string().describe("Current knowledge level (e.g., beginner, intermediate, knows coding).").optional(),
+    topic: z.string().nullable().optional().describe("The specific skills, language, or topic the user wants to learn (e.g. 'Python for Data Science')."),
+    experience: z.string().nullable().optional().describe("Current knowledge level (e.g., beginner, intermediate, knows coding)."),
     goal: z.string().nullable().optional().describe("The end goal or project they want to achieve, whether complete a certification or complete portfolio. Optional."),
     constraints: z.string().nullable().optional().describe("Any time limits, learning preferences, or worries the user mentions. Optional.")
 });
