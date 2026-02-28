@@ -4,7 +4,7 @@ CariSkill is an advanced, multi-agent AI platform designed for anyone who wants 
 
 ## 🏗️ Technical Architecture
 
-[Image of a multi-agent system architecture diagram showing an application frontend communicating with a backend orchestrating AI agents, web scrapers, and a database]
+![Image of a multi-agent system architecture diagram showing an application frontend communicating with a backend orchestrating AI agents, web scrapers, and a database](./Architecture.png)
 
 Our system is built on a highly scalable, serverless infrastructure designed to support intensive AI orchestration.
 
