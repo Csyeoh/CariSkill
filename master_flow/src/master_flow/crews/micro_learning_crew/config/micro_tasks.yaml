@@ -27,7 +27,7 @@ educate_task:
     Now, write the theoretical explanation for EACH of these micro-topics: {micro_topics_list}.
     
     Keep the user's experience level ({experience}) and goal ({goal}) in mind.
-    Make the theory highly engaging. Explain the theory in details, (e.g. what is it, how it works, and why it matters).
+    Make the theory highly engaging. explain theory in details but being concise with words that won't overwhelm the reader by having too much words.
     You must also evaluate and assign a difficulty rating ("easy", "medium", or "hard") for each topic.
   expected_output: >
     A comprehensive document containing the written theory and difficulty rating for every requested micro-topic.
