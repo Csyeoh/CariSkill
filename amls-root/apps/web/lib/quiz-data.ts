@@ -60,5 +60,63 @@ export const quizSets: Record<string, QuizSet> = {
         hint: "It sounds like a corrosive chemical."
       }
     ]
+  },
+  "py-mod-2": {
+    moduleId: "py-mod-2",
+    title: "Variables & Primitive Types",
+    questions: [
+      {
+        id: "q1",
+        question: "Which of the following is NOT a primitive data type in Python?",
+        options: [
+          "Integer (int)",
+          "Float (float)",
+          "List (list)",
+          "Boolean (bool)"
+        ],
+        correctAnswerIndex: 2,
+        explanation: "Lists are complex data structures (collections), whereas integers, floats, and booleans are basic primitive types.",
+        hint: "Think about which one contains multiple items."
+      },
+      {
+        id: "q2",
+        question: "How do you correctly assign the integer value 10 to a variable named 'score' in Python?",
+        options: [
+          "int score = 10",
+          "let score = 10",
+          "score = 10",
+          "score := 10"
+        ],
+        correctAnswerIndex: 2,
+        explanation: "Python does not require declaring the type (like 'int') or using keywords like 'let'. You just write the variable name, an equals sign, and the value.",
+        hint: "Python syntax is known for being extremely minimal and readable."
+      },
+      {
+        id: "q3",
+        question: "What is the result of the following assignment? `is_active = False`",
+        options: [
+          "Creates a String variable containing the word 'False'",
+          "Creates a Boolean variable with a false truth value",
+          "Throws a SyntaxError because false should be lowercase",
+          "Creates an Integer variable with a value of 0"
+        ],
+        correctAnswerIndex: 1,
+        explanation: "In Python, 'True' and 'False' (with capital first letters) are the built-in boolean types.",
+        hint: "Notice the capital 'F' without any quotation marks around it."
+      },
+      {
+        id: "q4",
+        question: "Because Python is dynamically typed, what happens if you run:\n`x = 5`\n`x = \"Hello\"`",
+        options: [
+          "The program crashes with a TypeError",
+          "The string 'Hello' is converted into a number",
+          "The variable x is reassigned a string value successfully",
+          "The second line is ignored and x remains 5"
+        ],
+        correctAnswerIndex: 2,
+        explanation: "Dynamic typing allows variables to change types freely during runtime. The container 'x' simply drops the integer 5 and holds the string 'Hello' instead.",
+        hint: "Dynamic typing means variables are just labels, they aren't bound to a specific kind of data forever."
+      }
+    ]
   }
 };

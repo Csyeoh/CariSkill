@@ -54,7 +54,7 @@ class MasterFlow(Flow[SystemState]):
     def prepare_micro_loop(self):
         """Extracts the nodes from the blueprint to prepare for the micro-research loop."""
         blueprint_data = self.state.blueprint # This is the dict saved from Macro Crew
-        self.state.pending_nodes = blueprint_data.get("nodes", [])
+        self.state.pending_nodes = list(blueprint_data.get("nodes", []))
         self.state.completed_modules = []
 
     @listen("process_single_node")
@@ -72,14 +72,28 @@ class MasterFlow(Flow[SystemState]):
         }
         
         # Kickoff the Scraper -> Educator -> Estimator pipeline
-        result = MicroLearningCrew().crew().kickoff(inputs=inputs)
-        node_content = result.pydantic
-        
-        # Save the generated content
-        if node_content:
-            self.state.completed_modules.append(node_content.model_dump())
-        else:
-            print(f"Warning: No valid pydantic output from Micro Crew for {current_node['title']}")
+        try:
+            result = MicroLearningCrew().crew().kickoff(inputs=inputs)
+            node_content = result.pydantic
+            
+            # Save the generated content
+            if node_content:
+                self.state.completed_modules.append(node_content.model_dump())
+            else:
+                print(f"Warning: No valid pydantic output from Micro Crew for {current_node['title']}")
+                # create a fallback entry so the frontend doesn't break
+                self.state.completed_modules.append({
+                    "node_id": current_node['node_id'],
+                    "micro_topics": [{"topic_title": "AI Generation Error", "theory_explanation": f"The AI encountered a formatting error while generating this specific topic ({current_node['title']}). Please try regenerating the roadmap or skip this section.", "resources": [], "topic_total_time_minutes": 0}],
+                    "node_total_time_minutes": 0
+                })
+        except Exception as e:
+            print(f"CRITICAL ERROR generating micro-content for {current_node['title']}: {e}")
+            self.state.completed_modules.append({
+                "node_id": current_node['node_id'],
+                "micro_topics": [{"topic_title": "AI Generation Error", "theory_explanation": f"The AI encountered a fatal parsing error for {current_node['title']}. It may have hallucinated malformed JSON. Continuing to next module...", "resources": [], "topic_total_time_minutes": 0}],
+                "node_total_time_minutes": 0
+            })
 
     @router(or_(prepare_micro_loop, process_node))
     def route_micro_crew(self):

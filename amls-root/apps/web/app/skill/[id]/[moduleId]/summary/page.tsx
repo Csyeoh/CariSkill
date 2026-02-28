@@ -1,64 +1,37 @@
 'use client';
 
-import { use, useState, useEffect, useRef } from 'react';
+import { use, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { summaryNotes } from '@/lib/summary-data';
 import { notFound } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bookmark, Download, Sparkles,
-  Play, Link2, Loader2, Clock
+  Bookmark, Download, Sparkles, CheckCircle2,
+  Table2, Database, Key, Link2, Code2, Play
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-export default function SummaryPage({ params }: { params: Promise<{ id: string, moduleId: string }> }) {
-  const { id, moduleId } = use(params);
+const conceptIconMap: Record<string, any> = {
+  table_chart: Table2,
+  dns: Database,
+  key: Key,
+  link: Link2,
+};
 
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export default function SummaryPage({ params }: { params: Promise<{ moduleId: string }> }) {
+  const { moduleId } = use(params);
+  const data = summaryNotes[moduleId];
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const { createClient } = await import('@/utils/supabase/client');
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        let fetchedData = null;
-
-        if (user) {
-          const { data: dbData } = await supabase
-            .from('micro_topics_contents')
-            .select('content')
-            .eq('roadmap_id', id)
-            .eq('macro_node_id', moduleId)
-            .limit(1);
-
-          if (dbData && dbData.length > 0) {
-            fetchedData = dbData[0].content;
-          }
-        }
-
-        if (fetchedData) {
-          setData(fetchedData);
-        }
-      } catch (err) {
-        console.error("Failed to fetch micro content:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContent();
-  }, [id, moduleId]);
+  if (!data) return notFound();
 
   const handleDownload = async () => {
-    if (!pdfRef.current || !data) return;
+    if (!pdfRef.current) return;
     setIsDownloading(true);
 
     try {
@@ -77,13 +50,16 @@ export default function SummaryPage({ params }: { params: Promise<{ id: string, 
             for (let j = 0; j < styles.length; j++) {
               const prop = styles[j];
               const value = styles.getPropertyValue(prop);
-              if (value && value.includes("okl")) {
+              // Nuclear Fix for modern CSS color spaces parsing errors (oklch, oklab, lch, lab) in html2canvas
+              if (value && /(oklch|oklab|lch|lab)\(/i.test(value)) {
                 if (prop.includes("shadow") || prop.includes("ring")) {
                   el.style.setProperty(prop, "none", "important");
                 } else if (prop.includes("background")) {
                   el.style.setProperty(prop, "#ffffff", "important");
+                } else if (prop.includes("color")) {
+                  el.style.setProperty(prop, "#374151", "important");
                 } else {
-                  el.style.setProperty(prop, "#18181b", "important");
+                  el.style.setProperty(prop, "transparent", "important");
                 }
               }
             }
@@ -100,23 +76,13 @@ export default function SummaryPage({ params }: { params: Promise<{ id: string, 
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${moduleId}_Summary.pdf`);
+      pdf.save(`${data.title.replace(/\s+/g, '_')}_Summary.pdf`);
     } catch (error) {
       console.error("PDF generation failed:", error);
     } finally {
       setIsDownloading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFDF6]">
-        <Loader2 className="w-12 h-12 text-[#FFD700] animate-spin" />
-      </div>
-    );
-  }
-
-  if (!data) return notFound();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF6] font-sans text-gray-900">
@@ -128,17 +94,16 @@ export default function SummaryPage({ params }: { params: Promise<{ id: string, 
         {/* Capture Area starts HERE to include the title */}
         <div ref={pdfRef} id="pdf-content" className="w-full max-w-5xl px-8 z-10">
 
-          {/* Header Section */}
+          {/* Header Section (Now inside pdfRef) */}
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] px-2 py-0.5 rounded">
-                  {moduleId.split('_').join(' ')}
+                  {data.topicTag}
                 </span>
+                <span className="text-sm text-gray-500 font-medium">{data.subject}</span>
               </div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 capitalize">
-                {moduleId.split('_').join(' ')} Summary
-              </h1>
+              <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900">{data.topic_title || data.title}</h1>
             </div>
 
             {/* Buttons (Ignored during PDF capture) */}
@@ -175,65 +140,112 @@ export default function SummaryPage({ params }: { params: Promise<{ id: string, 
 
           {/* Main Card Section */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-10">
-            <div className="bg-[#F9FAFB] border-b border-gray-100 px-8 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-[#F9FAFB] border-b border-gray-100 px-8 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-[#A16207] font-bold uppercase tracking-wide text-sm">
                 <Sparkles className="w-4 h-4" />
-                AI-Generated Micro Lessons
+                AI-Generated Summary Notes
               </div>
-              <div className="flex items-center gap-2 text-sm font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                <Clock className="w-4 h-4" />
-                ~{data.node_total_time_minutes} mins total
-              </div>
+              <div className="text-xs text-gray-400">Last updated: {data.lastUpdated}</div>
             </div>
 
             <div className="p-8 md:p-12 space-y-12 bg-white">
-              {data.micro_topics?.map((topic: any, idx: number) => (
-                <section key={idx}>
-                  <SectionHeader title={topic.topic_title} />
-
-                  {topic.topic_total_time_minutes && (
-                    <div className="mt-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Est. {topic.topic_total_time_minutes} mins
+              {data.theory_explanation ? (
+                <>
+                  <section>
+                    <SectionHeader title="Theory & Explanation" />
+                    <div className="mt-6 text-gray-700 leading-relaxed text-[17px] space-y-4">
+                      {data.theory_explanation.split('\n').map((line, i) => {
+                        if (!line.trim()) return null;
+                        const formattedLine = line
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/`([^`]+)`/g, '<code style="background-color: rgba(243, 244, 246, 0.5); color: #db2777; padding: 2px 6px; border-radius: 4px; font-size: 14px;">$1</code>')
+                          .replace(/\*   /g, '• ');
+                        return <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+                      })}
                     </div>
+                  </section>
+
+                  {data.resources && (
+                    <section>
+                      <SectionHeader title="Learning Resources" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        {data.resources.map((res, i) => (
+                          <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 p-5 rounded-2xl border border-gray-100 bg-[#FAFAFA] hover:bg-white hover:shadow-md hover:border-[#FFD700] transition-all group">
+                            <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FEF9C3] text-[#CA8A04] flex items-center justify-center">
+                              {res.type === 'youtube' ? <Play className="w-6 h-6 ml-0.5" /> : <Bookmark className="w-6 h-6" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 group-hover:text-[#CA8A04] transition-colors mb-1 line-clamp-2">{res.title}</h4>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                                <span className="capitalize">{res.type}</span>
+                                <span>•</span>
+                                <span>{res.estimated_time_minutes} mins</span>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </>
+              ) : (
+                <>
+                  {data.keyTakeaways && (
+                    <section>
+                      <SectionHeader title="Key Takeaways" />
+                      <ul className="space-y-4 mt-6">
+                        {data.keyTakeaways.map((item, i) => (
+                          <li key={i} className="flex items-start gap-4">
+                            <CheckCircle2 className="w-5 h-5 text-[#22C55E] mt-1 shrink-0" />
+                            <p className="text-gray-700 leading-relaxed">{item}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   )}
 
-                  <div className="mt-6 text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {topic.theory_explanation}
-                  </div>
-
-                  {topic.resources && topic.resources.length > 0 && (
-                    <div className="mt-8">
-                      <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Recommended Resources</h4>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {topic.resources.map((res: any, rIdx: number) => {
-                          const isVideo = res.type?.toLowerCase() === 'youtube' || res.url?.includes('youtube.com') || res.url?.includes('youtu.be');
+                  {data.coreConcepts && (
+                    <section>
+                      <SectionHeader title="Core Concepts" />
+                      <div className="grid md:grid-cols-2 gap-6 mt-6">
+                        {data.coreConcepts.map((concept, i) => {
+                          const Icon = conceptIconMap[concept.icon] || Database;
                           return (
-                            <a
-                              key={rIdx}
-                              href={res.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-start gap-4 p-4 bg-[#F9FAFB] border border-gray-100 rounded-xl hover:border-[#FFD700] hover:shadow-md hover:-translate-y-0.5 transition-all group"
-                            >
-                              <div className="mt-0.5 p-2 bg-white rounded-lg shadow-sm border border-gray-100 group-hover:border-[#FFD700] transition-colors">
-                                {isVideo ? <Play className="w-5 h-5 text-red-500" /> : <Link2 className="w-5 h-5 text-blue-500" />}
+                            <div key={i} className="p-6 bg-[#F9FAFB] border border-gray-100 rounded-2xl">
+                              <div className="flex items-center gap-3 mb-3">
+                                <Icon className="w-5 h-5 text-[#CA8A04]" />
+                                <h3 className="font-bold text-gray-900">{concept.title}</h3>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <h5 className="font-bold text-gray-900 group-hover:text-yellow-700 transition-colors text-sm line-clamp-2 leading-tight">
-                                  {res.title}
-                                </h5>
-                                <p className="text-[11px] font-bold text-gray-500 mt-1.5 uppercase tracking-wider">
-                                  {res.estimated_time_minutes} mins • {res.type || 'Article'}
-                                </p>
-                              </div>
-                            </a>
+                              <p className="text-sm text-gray-600">{concept.description}</p>
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
+                    </section>
                   )}
-                </section>
-              ))}
+
+                  {data.cheatSheet && (
+                    <section>
+                      <SectionHeader title="Quick Cheat Sheet" />
+                      <div className="mt-6 bg-[#18181B] rounded-2xl p-6 md:p-8 font-mono text-sm text-[#D4D4D8]">
+                        <div className="mb-8 bg-[#09090B] p-4 rounded-xl border border-white/10 text-[#FEF9C3]">
+                          <pre><code className="whitespace-pre-wrap">{data.cheatSheet.sqlStructure}</code></pre>
+                        </div>
+                        <div className="grid grid-cols-2 gap-8">
+                          <div>
+                            <p className="text-[#71717A] text-xs font-bold uppercase mb-4">ACID Properties</p>
+                            {data.cheatSheet.properties.map((p, i) => <div key={i} className="mb-1">• {p}</div>)}
+                          </div>
+                          <div>
+                            <p className="text-[#71717A] text-xs font-bold uppercase mb-4">Data Types</p>
+                            {data.cheatSheet.dataTypes.map((t, i) => <div key={i} className="mb-1">• {t}</div>)}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
