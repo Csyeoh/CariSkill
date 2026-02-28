@@ -1,164 +1,51 @@
-# CariSkill Project Setup Manual
+# CariSkill: AI-Powered Career Roadmap & Micro-Learning Generator
 
-Welcome to the CariSkill project! This guide will walk you through cloning the repository and setting up the local development environment for the frontend, the Python backend, and the AI worker.
+CariSkill is an advanced, multi-agent AI platform designed for anyone who wants to expand their tech skills but doesn't know where to start. While identifying missing competencies for job seekers is one of its powerful features, the true core of CariSkill is its ability to deeply understand a user's unique goals, time constraints, and experience level. It leverages this understanding to autonomously generate a highly personalized, interactive learning roadmap populated with dynamically scraped, high-quality micro-learning content.
 
-## ✨ Key Features
+## 🏗️ Technical Architecture
 
-- **Personalized AI Roadmaps**: Generate dynamic, step-by-step learning paths tailored to your skill level and goals using Gemini 2.5 Flash & Pro AI.
-- **Profile & Resume Management**: Upload resumes, extract key skills, and set specific target jobs for your career.
-- **Custom Onboarding Flow**: Seamlessly create your profile and set your learning objectives right after registration.
-- **Study Time Tracking**: Monitor your progress with a comprehensive learning report and visual activity calendar.
-- **Secure Authentication**: Built-in SSR cookie-based authentication with Supabase to ensure your data stays private and loads instantly.
+[Image of a multi-agent system architecture diagram showing an application frontend communicating with a backend orchestrating AI agents, web scrapers, and a database]
 
-## 📦 Prerequisites
+Our system is built on a highly scalable, serverless infrastructure designed to support intensive AI orchestration.
 
-Before you begin, ensure your local machine has the following installed:
-1. **Git**: [Download Git](https://git-scm.com/downloads)
-2. **Node.js (v18 or higher)**: [Download Node.js](https://nodejs.org/)
-3. **Python (v3.9 or higher)**: [Download Python](https://www.python.org/downloads/)
-4. **Docker Desktop**: [Download Docker](https://www.docker.com/products/docker-desktop/) (Required to run the local Qdrant Vector DB)
-5. **API Keys needed**:
-   - Google Generative AI (Gemini) API Key
-   - Supabase Project URL & Anon Key
-   - Qdrant Cloud URL & API Key
-   - Tavily API Key
+* **Frontend:** Next.js & React Flow
+  * Provides a responsive user interface and renders the generated curriculum as an interactive Directed Acyclic Graph (DAG).
+* **Backend:** Python (FastAPI) deployed on Google Cloud Run
+  * Serves as the main endpoint and orchestrates the backend operations. We chose Cloud Run for our deployment to ensure robust compute power for our AI tasks.
+* **Agent Framework & Scraping:** CrewAI & Tavily
+  * **CrewAI:** The framework used to build and orchestrate our multilayer agent architecture.
+  * **Tavily:** An AI-centric search engine integrated as the dedicated web scraping tool, allowing our agents to rapidly fetch and validate live web materials.
+* **Cognitive Engine:** Google Gemini
+  * The core LLM powering the reasoning capabilities of our agentic system. Gemini handles everything from analyzing user constraints to synthesizing the micro-learning theory, leveraging its massive context window to process thousands of lines of scraped documentation without data loss.
+* **Data Grounding & Storage:** Firebase Vector Store & Supabase
+  * **Firebase Vector Store:** Acts as our Retrieval-Augmented Generation (RAG) layer, storing embeddings of vetted educational data to strictly minimize LLM hallucinations.
+  * **Supabase (PostgreSQL):** Stores application state, user profiles, and the massive `jsonb` payloads containing the generated micro-learning modules.
 
 ---
 
-## 🚀 Step 1: Clone the Repository
+## ⚙️ Implementation Details
 
-Open your terminal or command prompt and run:
-```bash
-git clone <your-repository-url>
-cd CariSkill/amls-root
-```
+CariSkill's core logic is driven by a multi-agent architecture built on CrewAI, completely decoupling the initial analysis, high-level planning, and deep-level content generation into specialized workflows.
 
-This project uses a monorepo structure containing three separate services in the `apps` directory:
-- `apps/web`: The Next.js Frontend
-- `apps/api`: The Python FastAPI Backend
-- `apps/ai-worker`: The Node.js Express AI Worker
+* **Gap Analyst Agent (Skill Gap & ROI Analysis):** For users targeting specific careers, this agent starts by analyzing the user's uploaded resume against real-world job advertisements to identify exact missing competencies. Instead of simply listing all missing skills, the agent calculates the Return on Investment (ROI) for each gap, prioritizing the highest-value skills first so users focus their effort where it matters most.
+* **Architect Agent (Macro-Planning):** Whether acting on the prioritized skills from the Gap Analyst or direct input from a user exploring a new topic from scratch, the Gemini-powered Architect agent constructs a strict, Pydantic-validated blueprint. This structures the necessary learning objectives into a logical, prerequisite-based DAG node system. A dedicated QA Auditor agent then verifies this blueprint against the user's time constraints.
+* **Scraper & Educator Agents (Micro-Learning):** Once the macro-blueprint is approved, the system delegates the specific sub-topics to the Micro-Learning Crew. The Scraper agent utilizes the Tavily search tool to fetch live, authoritative web resources (e.g., official documentation, YouTube tutorials), while the Educator agent synthesizes those resources into bite-sized, high-yield theoretical explanations.
 
 ---
 
-## 🐍 Step 2: Setup the Python Backend (`apps/api`)
+## 🚧 Challenges Faced
 
-The backend handles document parsing, vector database interactions, and complex AI agents.
-
-1. Start the local Qdrant Vector Database via Docker:
-   From the project root (`amls-root`), run:
-   ```bash
-   docker-compose up -d
-   ```
-2. Navigate to the API directory:
-   ```bash
-   cd apps/api
-   ```
-2. Create and activate a Virtual Environment (recommended):
-   - **Windows**:
-     ```bash
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-   - **Mac/Linux**:
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-3. Install the dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Setup environment variables:
-   Create a `.env` file in the `apps/api` folder and add your keys:
-   ```env
-   GEMINI_API_KEY="your_google_ai_key"
-   QDRANT_URL="your_qdrant_cloud_url"
-   QDRANT_API_KEY="your_qdrant_api_key"
-   TAVILY_API_KEY="your_tavily_key"
-   ```
-5. Start the backend server:
-   ```bash
-   uvicorn main:app --reload
-   ```
-   *The server will run on `http://localhost:8000`*
+* **Long Agent Response Times:** The multi-agent workflow inherently takes a significant amount of time to research, scrape, and generate content. 
+  * *Solution:* We solved this by implementing asynchronous functions, allowing the agents to run tasks concurrently rather than sequentially. The system executes multiple tasks in parallel and seamlessly combines the results at the end of the flow, drastically reducing the total wait time for the user.
+* **Selecting the Optimal AI Stack and Frameworks:** It was difficult to identify the right combination of tools that could handle complex, autonomous AI operations without data loss or pipeline failures.
+  * *Solution:* We specifically chose **CrewAI** because it provides high velocity for development, and good for orchestrating role-playing agents (like our Architect and Scraper) and smoothly passing state between them. We paired this with **Google Gemini** as our core engine because its industry-leading massive context window is uniquely capable of processing the thousands of lines of scraped web data and detailed resumes our system generates, preventing the data loss and hallucinations common in other LLMs.
 
 ---
 
-## 🤖 Step 3: Setup the AI Worker (`apps/ai-worker`)
+## 🚀 Future Roadmap
 
-The AI worker is a lightweight Node.js microservice specifically for fast roadmap generation.
-
-1. Open a **new** terminal window and navigate to the worker directory:
-   ```bash
-   cd apps/ai-worker
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Setup environment variables:
-   Create a `.env` file in the `apps/ai-worker` folder:
-   ```env
-   GEMINI_API_KEY="your_google_ai_key"
-   PORT=8080
-   ```
-4. Start the worker development server:
-   ```bash
-   npm run dev
-   ```
-   *The worker will run on `http://localhost:8080`*
+* **Predictive Skill Recommendations:** As our user base scales, we will export anonymized learning trend data to Google BigQuery. By applying data analysis to these macro-trends, CariSkill will proactively recommend emerging, high-value skills to our users before they become mainstream requirements.
+* **Community-Driven Social Learning:** Transitioning from a single-player utility to a multiplayer ecosystem. Users will be able to publish, rate, and share their AI-generated roadmaps, creating a massive library of user-generated content and allowing beginners to follow the exact learning paths of industry veterans.
+* **B2B Enterprise Upskilling:** We plan to rapidly expand our user base by transitioning from individual B2C users to bulk B2B licensing for universities and corporate HR departments. By integrating Google BigQuery, we can securely process massive, organizational-level datasets. This allows the platform to support thousands of concurrent users per institution while providing administrators with real-time analytics dashboards to track bulk upskilling progress.
 
 ---
-
-## 💻 Step 4: Setup the Next.js Frontend (`apps/web`)
-
-The frontend is the main user interface that the user interacts with.
-
-1. Open a **third** new terminal window and navigate to the web directory:
-   ```bash
-   cd apps/web
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Setup environment variables:
-   Create a `.env.local` file in the `apps/web` folder:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
-   NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
-   NEXT_PUBLIC_AI_WORKER_URL="http://localhost:8080"
-   ```
-   *(Note: The AI Worker URL is pointed to your local worker server. In production, this would be a Cloud Run link).*
-4. Start the Next.js development server:
-   ```bash
-   npm run dev
-   ```
-   *The web app will run on `http://localhost:3000`*
-
----
-
-## 🎉 Access the Application
-
-Once all three terminal windows are running their respective servers without errors:
-
-1. Open your web browser.
-2. Navigate to [http://localhost:3000](http://localhost:3000)
-3. You can now use the fully functional CariSkill application locally!
-
----
-
-## 🤖 AI Agent Bootstrap Instructions
-
-If an AI Assistant (like Antigravity or Claude) is reading this to automatically set up the workspace for the user, execute these exact steps:
-
-1. **Boot the Database**: From `amls-root`, run `docker-compose up -d` to spin up Qdrant.
-2. **Write Environments**:
-   - `apps/api/.env`: Needs `GEMINI_API_KEY`, `TAVILY_API_KEY`, `QDRANT_URL="http://localhost:6333"`.
-   - `apps/ai-worker/.env`: Needs `GEMINI_API_KEY` and `PORT=8080`.
-   - `apps/web/.env.local`: Needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_AI_WORKER_URL="http://localhost:8080"`.
-3. **Launch the Microservices**:
-   - Open Background Terminal 1: `cd apps/api && pip install -r requirements.txt && uvicorn main:app --reload`
-   - Open Background Terminal 2: `cd apps/ai-worker && npm install && npm run dev`
-   - Open Background Terminal 3: `cd apps/web && npm install && npm run dev`
-4. Wait 15 seconds, and confirm that all 3 ports (8000, 8080, 3000) are fully operational without crashing.
