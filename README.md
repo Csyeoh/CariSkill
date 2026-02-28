@@ -1,4 +1,4 @@
-# CariSkill: AI-Powered Career Roadmap & Micro-Learning Generator
+# CariSkill: AI-Powered Skill Roadmap Generator
 
 CariSkill is an advanced, multi-agent AI platform designed for anyone who wants to expand their tech skills but doesn't know where to start. While identifying missing competencies for job seekers is one of its powerful features, the true core of CariSkill is its ability to deeply understand a user's unique goals, time constraints, and experience level. It leverages this understanding to autonomously generate a highly personalized, interactive learning roadmap populated with dynamically scraped, high-quality micro-learning content.
 
