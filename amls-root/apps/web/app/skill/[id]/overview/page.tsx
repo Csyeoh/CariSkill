@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getSkillTrack, SkillTrack } from '@/lib/roadmap-data';
 import { notFound, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Lock, Play, Rocket, Hand, Clock, Quote,
@@ -14,6 +13,7 @@ import {
 
 export default function SkillOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
 
   const [data, setData] = useState<SkillTrack | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const fetchData = async () => {
       let stringifiedRoadmap = localStorage.getItem(`roadmap_${id}`);
-      let dbTopic: string | null = null;
+      let dbResolvedTopic = "";
 
       // Try fetching from Supabase if logged in.
       try {
@@ -30,18 +30,28 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-          const { data: roadmaps } = await supabase
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+          let query = supabase
             .from('roadmaps')
-            .select('id, content, topic')
+            .select('topic, content')
             .eq('user_id', user.id)
-            .eq('id', id)
+            .order('created_at', { ascending: false })
             .limit(1);
 
+          if (isUUID) {
+            query = query.eq('id', id);
+          } else {
+            query = query.ilike('topic', `%${id.replace(/-/g, ' ')}%`);
+          }
+
+          const { data: roadmaps, error } = await query;
+
           if (roadmaps && roadmaps.length > 0) {
+            dbResolvedTopic = roadmaps[0].topic || "";
             stringifiedRoadmap = typeof roadmaps[0].content === 'string'
               ? roadmaps[0].content
               : JSON.stringify(roadmaps[0].content);
-            dbTopic = roadmaps[0].topic;
           }
         }
       } catch (err) {
@@ -62,16 +72,12 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
             learningPathData = parsed.phases;
           } else if (parsed?.roadmap?.phases && Array.isArray(parsed.roadmap.phases)) {
             learningPathData = parsed.roadmap.phases;
-          } else if (parsed?.roadmap?.nodes && Array.isArray(parsed.roadmap.nodes)) {
-            learningPathData = parsed.roadmap.nodes;
           } else if (parsed?.learning_path && Array.isArray(parsed.learning_path)) {
             learningPathData = parsed.learning_path;
           } else if (parsed?.roadmap?.learning_path && Array.isArray(parsed.roadmap.learning_path)) {
             learningPathData = parsed.roadmap.learning_path;
           } else if (parsed?.modules && Array.isArray(parsed.modules)) {
             learningPathData = parsed.modules;
-          } else if (parsed?.nodes && Array.isArray(parsed.nodes)) {
-            learningPathData = parsed.nodes;
           } else if (parsed && typeof parsed.error_unparsed_raw_text === 'string') {
             // Handle the specific database fallback case where the LLM generated raw conversation
             learningPathData = [{
@@ -113,19 +119,19 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           // Transform CrewAI JSON format to standard frontend SkillTrack format
           const transformedData: SkillTrack = {
             id: id,
-            title: parsed?.topic || dbTopic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            title: dbResolvedTopic || parsed?.topic || id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             tagline: parsed?.description || parsed?.roadmap?.description || "Your AI-Generated Learning Path",
             progress: 0,
             estimatedTime: readableTime,
             welcomeMessage: "Welcome! Your specialized AI roadmap has been forged.",
             quote: { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
             modules: learningPathData.map((step: any, idx: number) => ({
-              id: step?.id || step?.node_id || `m${idx + 1}`,
-              title: step?.skill || step?.title || `Phase ${idx + 1}`,
-              description: step?.obj || step?.description || step?.content || step?.rationale || "Learn the concepts to master this step.",
+              id: step?.node_id || step?.id || `m${idx + 1}`,
+              title: step?.title || step?.skill || `Phase ${idx + 1}`,
+              description: step?.rationale || step?.obj || step?.description || step?.content || "Learn the concepts to master this step.",
               duration: step?.duration,
               obj: step?.obj,
-              items: step?.items || step?.suggested_micro_topics || [],
+              items: step?.suggested_micro_topics || step?.items || [],
               status: idx === 0 ? 'current' : 'locked' // First module is current, rest locked
             }))
           };
@@ -140,6 +146,11 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
       // Fallback to static data if not found in localStorage or Supabase
       const fallbackData = getSkillTrack(id);
       if (fallbackData) {
+        if (dbResolvedTopic) {
+          fallbackData.title = dbResolvedTopic;
+          fallbackData.tagline = `Your personalized path to mastering ${dbResolvedTopic}.`;
+          fallbackData.welcomeMessage = `Welcome to your custom ${dbResolvedTopic} roadmap! We've tailored these steps based on your goals.`;
+        }
         setData(fallbackData);
         setLoading(false);
       } else {
@@ -281,10 +292,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                   </div>
 
                   {/* Module Card */}
-                  <Link
-                    href={`/skill/${id}/${module.id}/summary`}
-                    className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left flex-1 min-w-[250px] w-full max-w-lg backdrop-blur-md hover:border-[#FFD700] transition-colors group cursor-pointer block"
-                  >
+                  <div className="bg-white/80 p-6 rounded-3xl border border-yellow-100 shadow-sm text-center md:text-left flex-1 min-w-[250px] w-full max-w-lg backdrop-blur-md hover:border-[#FFD700] transition-colors group">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-gray-900 font-display text-xl group-hover:text-yellow-600 transition-colors">
                         {module.title}
@@ -312,7 +320,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                         </ul>
                       </div>
                     )}
-                  </Link>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -364,7 +372,6 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

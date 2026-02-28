@@ -6,9 +6,9 @@ import Footer from '@/components/Footer';
 import { materialTopics } from '@/lib/materials-data';
 import { notFound, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Bookmark, Flag, Play, 
-  Volume2, Maximize2, ChevronLeft, ChevronRight 
+import {
+  ArrowLeft, Bookmark, Flag, Play,
+  Volume2, Maximize2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 export default function MaterialsPage({ params }: { params: Promise<{ id: string, moduleId: string }> }) {
@@ -36,10 +36,10 @@ export default function MaterialsPage({ params }: { params: Promise<{ id: string
                   {data.part}
                 </span>
                 <span className="text-sm">•</span>
-                <span className="text-sm font-medium">{data.duration}</span>
+                <span className="text-sm font-medium">{data.topic_total_time_minutes ? `${data.topic_total_time_minutes} mins total` : data.duration}</span>
               </div>
             </motion.div>
-            <button 
+            <button
               onClick={() => router.push(`/skill/${id}`)}
               className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all text-sm font-bold shadow-sm active:scale-95"
             >
@@ -78,41 +78,82 @@ export default function MaterialsPage({ params }: { params: Promise<{ id: string
 
           <div className="lg:col-span-9 space-y-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 md:p-10 shadow-xl border border-gray-100 relative">
-              <button 
+              <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
-                className={`absolute top-8 right-8 p-2.5 rounded-full transition-all duration-300 shadow-sm ${
-                  isBookmarked ? 'bg-[#FFD700] text-white' : 'text-gray-400 hover:text-[#CA8A04] hover:bg-[#FEF9C3]'
-                }`}
+                className={`absolute top-8 right-8 p-2.5 rounded-full transition-all duration-300 shadow-sm ${isBookmarked ? 'bg-[#FFD700] text-white' : 'text-gray-400 hover:text-[#CA8A04] hover:bg-[#FEF9C3]'
+                  }`}
               >
                 <Bookmark className={`w-6 h-6 ${isBookmarked ? 'fill-current' : ''}`} />
               </button>
 
               <div className="mb-10 pr-12">
-                <h2 className="font-display font-bold text-2xl text-gray-900 mb-6">{data.title}</h2>
-                {data.description.map((para, i) => (
-                  <p key={i} className="text-gray-600 leading-relaxed text-lg mb-4">{para}</p>
-                ))}
+                <h2 className="font-display font-bold text-2xl text-gray-900 mb-6">{data.topic_title || data.title}</h2>
+                {data.theory_explanation ? (
+                  <div className="text-gray-700 leading-relaxed text-[17px] space-y-4">
+                    {data.theory_explanation.split('\n').map((line, i) => {
+                      if (!line.trim()) return null;
+                      // Basic regex for **bold** and `code`
+                      const formattedLine = line
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/`([^`]+)`/g, '<code style="background-color: rgba(243, 244, 246, 0.5); color: #db2777; padding: 2px 6px; border-radius: 4px; font-size: 14px;">$1</code>')
+                        .replace(/\*   /g, '• '); // basic bullet point conversion
+                      return <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+                    })}
+                  </div>
+                ) : (
+                  data.description?.map((para, i) => (
+                    <p key={i} className="text-gray-600 leading-relaxed text-lg mb-4">{para}</p>
+                  ))
+                )}
               </div>
 
-              <div className="bg-[#18181B] rounded-3xl overflow-hidden shadow-2xl relative aspect-video w-full group">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-                <div className="absolute inset-0 flex items-center justify-center z-20">
-                  <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform group-hover:scale-110 border border-white/40 shadow-xl">
-                    <Play className="text-white w-8 h-8 fill-current ml-1" />
-                  </button>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex items-center justify-between text-white/90">
-                  <span className="text-xs font-bold tracking-widest">04:20 / 12:45</span>
-                  <div className="flex items-center gap-4">
-                    <Volume2 className="w-5 h-5 cursor-pointer" />
-                    <Maximize2 className="w-5 h-5 cursor-pointer" />
+              {data.resources ? (
+                <div className="space-y-6">
+                  <h3 className="font-display font-bold text-xl text-gray-900 mb-4 flex items-center gap-2">
+                    <Bookmark className="w-5 h-5 text-[#CA8A04]" />
+                    Learning Resources
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {data.resources.map((res, i) => (
+                      <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 p-5 rounded-2xl border border-gray-100 bg-[#FAFAFA] hover:bg-white hover:shadow-md hover:border-[#FFD700] transition-all group">
+                        <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FEF9C3] text-[#CA8A04] flex items-center justify-center">
+                          {res.type === 'youtube' ? <Play className="w-6 h-6 ml-0.5" /> : <Bookmark className="w-6 h-6" />}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 group-hover:text-[#CA8A04] transition-colors mb-1 line-clamp-2">{res.title}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                            <span className="capitalize">{res.type}</span>
+                            <span>•</span>
+                            <span>{res.estimated_time_minutes} mins</span>
+                          </div>
+                        </div>
+                      </a>
+                    ))}
                   </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10 z-20">
-                  <div className="h-full w-1/3 bg-[#FFD700]" />
-                </div>
-              </div>
-              <p className="mt-4 text-center text-sm text-gray-500 font-medium italic">{data.video.title}</p>
+              ) : data.video && (
+                <>
+                  <div className="bg-[#18181B] rounded-3xl overflow-hidden shadow-2xl relative aspect-video w-full group">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+                    <div className="absolute inset-0 flex items-center justify-center z-20">
+                      <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform group-hover:scale-110 border border-white/40 shadow-xl">
+                        <Play className="text-white w-8 h-8 fill-current ml-1" />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex items-center justify-between text-white/90">
+                      <span className="text-xs font-bold tracking-widest">04:20 / 12:45</span>
+                      <div className="flex items-center gap-4">
+                        <Volume2 className="w-5 h-5 cursor-pointer" />
+                        <Maximize2 className="w-5 h-5 cursor-pointer" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10 z-20">
+                      <div className="h-full w-1/3 bg-[#FFD700]" />
+                    </div>
+                  </div>
+                  <p className="mt-4 text-center text-sm text-gray-500 font-medium italic">{data.video.title}</p>
+                </>
+              )}
             </motion.div>
 
             <div className="flex justify-between items-center bg-white rounded-2xl p-4 shadow-sm border border-gray-100">

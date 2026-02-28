@@ -57,5 +57,29 @@ export const flashcardSets: Record<string, FlashcardSet> = {
         ]
       }
     ]
+  },
+  "py-mod-2": {
+    moduleId: "py-mod-2",
+    title: "Variables & Primitive Types",
+    cards: [
+      {
+        id: "fc1",
+        tag: "CONCEPT",
+        front: "What data type is defined by a decimal point? (e.g. 3.14)",
+        back: ["Float (floating point number)"]
+      },
+      {
+        id: "fc2",
+        tag: "SYNTAX",
+        front: "Is it required to declare a variable's type when initializing it in Python?",
+        back: ["No. Python is dynamically typed.", "Variables assume the type of the value assigned."]
+      },
+      {
+        id: "fc3",
+        tag: "VALUES",
+        front: "What are the boolean values in Python?",
+        back: ["True", "False (must be capitalized)"]
+      }
+    ]
   }
 };
