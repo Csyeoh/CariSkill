@@ -32,9 +32,12 @@ sys.stderr = sys.stdout
 # -------------------------
 
 from typing import Optional
+import asyncio
 from master_flow.model.system_state import SystemState
 
 app = FastAPI()
+
+active_flows = {}  # In-memory dictionary to track background generation tasks
 
 # Allow frontend requests
 app.add_middleware(
@@ -81,18 +84,40 @@ async def start_macro_endpoint(req: StartMacroRequest):
     flow.state.constraints = req.constraints
     
     print(f"Starting macro flow for session {flow.state.id} with topic: {req.topic}")
-    result = await flow.kickoff_async() 
     
-    response_data = result if isinstance(result, dict) else {"status": "completed", "result": result}
-    
-    final_response = {
-        "response": response_data,
-        "state": flow.state.model_dump(),
-        "session_id": flow.state.id
-    }
-    
-    import json
-    with open("temp_master_flow_output.json", "w", encoding="utf-8") as f:
-        json.dump(final_response, f, indent=2)
+    # Initialize state in dictionary
+    active_flows[req.session_id] = {"status": "processing"}
+
+    async def execute_flow():
+        try:
+            result = await flow.kickoff_async() 
+            response_data = result if isinstance(result, dict) else {"status": "completed", "result": result}
+            final_response = {
+                "status": "completed",
+                "response": response_data,
+                "state": flow.state.model_dump(),
+                "session_id": flow.state.id
+            }
+            active_flows[req.session_id] = final_response
+            
+            import json
+            with open("temp_master_flow_output.json", "w", encoding="utf-8") as f:
+                json.dump(final_response, f, indent=2)
+                
+        except Exception as e:
+            print(f"Error during CrewAI execution: {str(e)}")
+            active_flows[req.session_id] = {"status": "error", "message": str(e)}
+
+    # Dispatch to background task to prevent browser HTTP timeout
+    asyncio.create_task(execute_flow())
         
-    return final_response
+    return {"status": "processing", "session_id": req.session_id}
+
+
+@app.get("/api/macro_status/{session_id}")
+async def get_macro_status(session_id: str):
+    if session_id in active_flows:
+        return active_flows[session_id]
+    
+    # If not found in active memory, check if persistence DB has it marked complete (future implementation)
+    return {"status": "unknown"}
