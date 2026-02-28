@@ -55,7 +55,32 @@ const fetchRoadmapFromAI = async (sessionId: string, activeTopic: string, payloa
     throw new Error('Failed to start master flow');
   }
 
-  return response.json();
+  const initialData = await response.json();
+
+  // If the backend returns that it's processing asynchronously, we poll
+  if (initialData.status === 'processing') {
+    while (true) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      try {
+        const statusRes = await fetch(`${Url}/api/macro_status/${sessionId}`);
+        if (!statusRes.ok) throw new Error(`Status check failed with ${statusRes.status}`);
+
+        const statusData = await statusRes.json();
+
+        if (statusData.status === 'completed') {
+          return statusData;
+        } else if (statusData.status === 'error') {
+          throw new Error(`CrewAI execution failed: ${statusData.message || statusData.detail || 'Unknown error'}`);
+        }
+        // if 'processing' or 'unknown', just loop again
+      } catch (e) {
+        console.warn("Polling error, retrying...", e);
+      }
+    }
+  }
+
+  return initialData;
 };
 
 const parseRoadmapData = (rawResult: any) => {
@@ -101,6 +126,90 @@ const insertMicroTopicsDB = async (supabase: any, dbRecordId: string, rawResult:
   if (microInsertions.length > 0) {
     const { error } = await supabase.from('micro_topics_contents').insert(microInsertions);
     if (error) console.error("Failed to insert micro topics into Supabase:", error);
+  }
+};
+
+const insertGraphNodesDB = async (supabase: any, dbRecordId: string, parsedRoadmap: any) => {
+  const nodes = parsedRoadmap?.nodes || parsedRoadmap?.phases || parsedRoadmap?.roadmap?.nodes || parsedRoadmap?.learning_path || [];
+  if (!nodes || nodes.length === 0) return;
+
+  // 1. Calculate Depths (Topological Sort / BFS)
+  const nodeDepths = new Map<string, number>();
+  let changed = true;
+  const maxIterations = 100; // prevent infinite loops on cycles
+  let iter = 0;
+
+  while (changed && iter < maxIterations) {
+    changed = false;
+    iter++;
+    nodes.forEach((node: any) => {
+      const nodeId = node.node_id || node.id;
+      if (!nodeId) return;
+
+      const prereqs = node.prerequisites || [];
+      if (prereqs.length === 0) {
+        if (!nodeDepths.has(nodeId)) {
+          nodeDepths.set(nodeId, 1);
+          changed = true;
+        }
+      } else {
+        let maxPrereqDepth = 0;
+        let allPrereqsResolved = true;
+        prereqs.forEach((prereq: string) => {
+          if (nodeDepths.has(prereq)) {
+            maxPrereqDepth = Math.max(maxPrereqDepth, nodeDepths.get(prereq)!);
+          } else {
+            allPrereqsResolved = false;
+          }
+        });
+
+        if (allPrereqsResolved) {
+          const newDepth = maxPrereqDepth + 1;
+          if (!nodeDepths.has(nodeId) || nodeDepths.get(nodeId) !== newDepth) {
+            nodeDepths.set(nodeId, newDepth);
+            changed = true;
+          }
+        }
+      }
+    });
+  }
+
+  // Fallback for unresolved nodes (e.g. broken dependencies or AI hallucination)
+  nodes.forEach((node: any) => {
+    const nodeId = node.node_id || node.id;
+    if (nodeId && !nodeDepths.has(nodeId)) nodeDepths.set(nodeId, 1);
+  });
+
+  // 2. Prepare Insertions
+  const nodeInsertions = nodes.map((node: any) => ({
+    roadmap_id: dbRecordId,
+    node_id: node.node_id || node.id,
+    title: node.title || node.skill || "Untitled Node",
+    rationale: node.rationale || node.description || "",
+    depth_level: nodeDepths.get(node.node_id || node.id) || 1
+  }));
+
+  const edgeInsertions: any[] = [];
+  nodes.forEach((node: any) => {
+    const targetId = node.node_id || node.id;
+    const prereqs = node.prerequisites || [];
+    prereqs.forEach((sourceId: string) => {
+      edgeInsertions.push({
+        roadmap_id: dbRecordId,
+        source_node_id: sourceId,
+        target_node_id: targetId
+      });
+    });
+  });
+
+  // 3. Execute Insertions (ignore errors if tables don't exist yet)
+  if (nodeInsertions.length > 0) {
+    const { error: nodeError } = await supabase.from('roadmap_nodes').insert(nodeInsertions);
+    if (nodeError) console.warn("Failed to insert roadmap_nodes (has the SQL been run?):", nodeError);
+  }
+  if (edgeInsertions.length > 0) {
+    const { error: edgeError } = await supabase.from('roadmap_edges').insert(edgeInsertions);
+    if (edgeError) console.warn("Failed to insert roadmap_edges (has the SQL been run?):", edgeError);
   }
 };
 
@@ -179,6 +288,7 @@ function LoadingRoadmapContent() {
         if (user && dbRecordId) {
           await updateRoadmapDB(supabase, dbRecordId, activeTopic, parsedRoadmap, totalTimeMinutes);
           await insertMicroTopicsDB(supabase, dbRecordId, rawResult);
+          await insertGraphNodesDB(supabase, dbRecordId, parsedRoadmap);
         }
 
         // 5. Finalize UI navigation

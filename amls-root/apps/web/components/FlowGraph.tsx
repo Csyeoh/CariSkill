@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     ReactFlow,
@@ -17,8 +17,11 @@ import {
     useReactFlow,
 } from '@xyflow/react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { initialNodes, initialEdges, ProgressNodeData } from '@/lib/progress-data';
+import { initialNodes, initialEdges, mockInitialNodes, mockInitialEdges, ProgressNodeData } from '@/lib/progress-data';
 import { ProgressNode } from './ProgressNode';
+import { useAuth } from '@/components/AuthProvider';
+import { createClient } from '@/utils/supabase/client';
+import dagre from 'dagre';
 
 const nodeTypes = {
     progressNode: ProgressNode,
@@ -26,7 +29,7 @@ const nodeTypes = {
 
 // Computes auto-layout based on ranks (BT = bottom to top)
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-    // 1. Build relationships
+    // 1. Build relationships to compute animation depths
     const childrenMap = new Map<string, string[]>();
     nodes.forEach(n => childrenMap.set(n.id, []));
     edges.forEach(e => {
@@ -35,7 +38,6 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
         }
     });
 
-    // Compute depth for sequential animation
     const depths = new Map<string, number>();
     depths.set('user', 0);
     const queue = ['user'];
@@ -51,54 +53,18 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
         });
     }
 
-    // 2. Radial Placement Math
-    const nodePositions = new Map<string, { x: number, y: number }>();
-    nodePositions.set('user', { x: 0, y: 0 });
+    // 2. Dagre Layout (Reverse Tree, Bottom-To-Top)
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({
+        rankdir: 'BT', // Bottom-to-Top
+        nodesep: 80,   // Reduced horizontal spacing between neighbors
+        ranksep: 120,   // Reduced vertical spacing between levels
+        align: 'UL',
+    });
 
-    // Distance per depth level
-    const depthRadius = 240;
-
-    const visited = new Set<string>();
-    visited.add('user');
-
-    const traverseRadial = (nodeId: string, currentDepth: number, centerAngle: number, sliceWidth: number) => {
-        const rawChildren = childrenMap.get(nodeId) || [];
-        const children = rawChildren.filter(c => !visited.has(c));
-
-        if (children.length === 0) return;
-
-        const startAngle = centerAngle - (sliceWidth / 2);
-        const childSlice = sliceWidth / children.length;
-
-        children.forEach((childId, i) => {
-            visited.add(childId);
-
-            const childAngle = startAngle + (i * childSlice) + (childSlice / 2);
-
-            const r = currentDepth * depthRadius;
-            const x = r * Math.cos(childAngle);
-            const y = r * Math.sin(childAngle);
-
-            nodePositions.set(childId, { x, y });
-
-            const nextSliceWidth = currentDepth === 1 ? (Math.PI * 2) / children.length : childSlice * 0.85;
-
-            traverseRadial(childId, currentDepth + 1, childAngle, nextSliceWidth);
-        });
-    };
-
-    traverseRadial('user', 1, 0, Math.PI * 2);
-
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
-
-    const newNodes = nodes.map((node) => {
-        const pos = nodePositions.get(node.id) || { x: 0, y: 0 };
-        const newNode = { ...node };
-
-        delete newNode.targetPosition;
-        delete newNode.sourcePosition;
-
+    // Populate dagre
+    nodes.forEach((node) => {
         let size = 64;
         if (node.data.type === 'user') size = 80;
         else if (node.data.type === 'category') size = 72;
@@ -106,9 +72,36 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
         else if (node.data.type === 'level1') size = 56;
         else size = 48;
 
+        dagreGraph.setNode(node.id, { width: size, height: size });
+    });
+
+    edges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    // Calculate Directed Acyclic Graph Layout
+    dagre.layout(dagreGraph);
+
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    // Apply dagre calculated coordinates and add cosmetic organic jitter
+    const newNodes = nodes.map((node) => {
+        const nodePosition = dagreGraph.node(node.id);
+        const newNode = { ...node };
+
+        delete newNode.targetPosition;
+        delete newNode.sourcePosition;
+
+        // Deterministic pseudo-random jitter based on node ID to make the tree look less rigid/robotic
+        let hash = 0;
+        for (let i = 0; i < node.id.length; i++) hash += node.id.charCodeAt(i);
+        const randX = (Math.sin(hash) * 15);
+        const randY = (Math.cos(hash) * 10);
+
         newNode.position = {
-            x: pos.x - size / 2,
-            y: pos.y - size / 2,
+            x: nodePosition.x - (nodePosition.width / 2) + randX,
+            y: nodePosition.y - (nodePosition.height / 2) + randY,
         };
 
         newNode.data = { ...newNode.data, depth: depths.get(node.id) || 0 };
@@ -123,7 +116,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 
     const newEdges = edges.map(edge => ({
         ...edge,
-        data: { ...edge.data, sourceDepth: depths.get(edge.source) || 0 }
+        data: { ...edge.data, sourceDepth: depths.get(edge.source) || 0 },
+        type: 'straight' // Strictly straight lines per user request
     }));
 
     const bounds = {
@@ -137,9 +131,187 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 };
 
 export default function FlowGraph() {
-    const { nodes: layoutedNodes, edges: layoutedEdges, bounds } = useMemo(() =>
-        getLayoutedElements(initialNodes, initialEdges), []
-    );
+    const { user } = useAuth();
+    const isMockUser = user?.email === 'mock@example.com';
+
+    // DB state
+    const [dbNodes, setDbNodes] = useState<Node[]>([]);
+    const [dbEdges, setDbEdges] = useState<Edge[]>([]);
+    const [loadingDb, setLoadingDb] = useState(true);
+
+    useEffect(() => {
+        if (isMockUser || !user) {
+            setLoadingDb(false);
+            return;
+        }
+
+        const fetchGraphData = async () => {
+            const supabase = createClient();
+
+            // 1. Get the latest roadmap for the user
+            const { data: roadmaps, error: rError } = await supabase
+                .from('roadmaps')
+                .select('id, topic')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (rError || !roadmaps || roadmaps.length === 0) {
+                setLoadingDb(false);
+                return;
+            }
+
+            const latestRoadmapId = roadmaps[0].id;
+            const mainTopic = roadmaps[0].topic;
+
+            // 2. Fetch nodes, edges and user progress in parallel
+            const [rawNodesRes, rawEdgesRes, progressRes] = await Promise.all([
+                supabase.from('roadmap_nodes').select('*').eq('roadmap_id', latestRoadmapId),
+                supabase.from('roadmap_edges').select('*').eq('roadmap_id', latestRoadmapId),
+                supabase.from('node_progress').select('node_id').eq('user_id', user.id).eq('roadmap_id', latestRoadmapId).eq('is_completed', true),
+            ]);
+
+            const rawNodes = rawNodesRes.data;
+            const rawEdges = rawEdgesRes.data;
+            const nError = rawNodesRes.error;
+            const completedNodeIds = new Set((progressRes.data || []).map((p: any) => p.node_id));
+
+            // Build prerequisite map: targetNodeId -> [sourceNodeIds]
+            const prereqMap = new Map<string, string[]>();
+            (rawEdges || []).forEach((e: any) => {
+                if (!prereqMap.has(e.target_node_id)) prereqMap.set(e.target_node_id, []);
+                prereqMap.get(e.target_node_id)!.push(e.source_node_id);
+            });
+
+            if (!nError && rawNodes && rawNodes.length > 0) {
+                // Map DB nodes to React Flow format
+                const mappedNodes: Node<ProgressNodeData>[] = [];
+
+                // 1. Absolute Root: "Me"
+                mappedNodes.push({
+                    id: 'user',
+                    position: { x: 0, y: 0 },
+                    data: { label: 'Me', icon: 'Crown', status: 'completed', type: 'user', color: '#ffeb3b' },
+                    type: 'progressNode',
+                });
+
+                // 2. Level 1 Root: The Main Topic
+                const topicNodeId = mainTopic ? mainTopic.toLowerCase().replace(/\s+/g, '-') : 'topic';
+                // Overall percentage = completed nodes / total nodes
+                const overallPct = rawNodes.length > 0
+                    ? Math.round((completedNodeIds.size / rawNodes.length) * 100)
+                    : 0;
+                const topicStatus = overallPct === 100 ? 'completed' : 'progress';
+                mappedNodes.push({
+                    id: topicNodeId,
+                    position: { x: 0, y: 0 },
+                    data: {
+                        label: mainTopic || 'Topic',
+                        status: topicStatus,
+                        type: 'tech',
+                        color: topicStatus === 'completed' ? '#4ade80' : '#4da6ff',
+                        percentage: `${overallPct}%`,
+                        isCollapsible: true,
+                        isCollapsed: false
+                    },
+                    type: 'progressNode',
+                });
+
+                // 3. All DB Nodes with real status computed from progress + prereqs
+                rawNodes.forEach((n: any) => {
+                    const isCompleted = completedNodeIds.has(n.node_id);
+                    const prereqs = prereqMap.get(n.node_id) || [];
+                    const allPrereqsDone = prereqs.length === 0 || prereqs.every(pid => completedNodeIds.has(pid));
+
+                    let nodeStatus: 'completed' | 'progress' | 'locked';
+                    let nodeColor: string;
+                    if (isCompleted) {
+                        nodeStatus = 'completed';
+                        nodeColor = '#4ade80'; // green
+                    } else if (allPrereqsDone) {
+                        nodeStatus = 'progress';
+                        nodeColor = '#4da6ff'; // blue
+                    } else {
+                        nodeStatus = 'locked';
+                        nodeColor = '#9ca3af'; // grey
+                    }
+
+                    mappedNodes.push({
+                        id: n.node_id,
+                        position: { x: 0, y: 0 },
+                        data: {
+                            label: n.title,
+                            status: nodeStatus,
+                            type: n.depth_level === 1 ? 'level1' : 'level2',
+                            color: nodeColor,
+                            isCollapsible: true,
+                            isCollapsed: false,
+                            topicSlug: topicNodeId,
+                        },
+                        type: 'progressNode',
+                    });
+                });
+
+                const mappedEdges: Edge[] = [];
+
+                // Link "Me" -> "Topic"
+                mappedEdges.push({
+                    id: `e-user-topic`,
+                    source: 'user',
+                    target: topicNodeId,
+                    type: 'straight',
+                    animated: false,
+                    className: 'animate-draw-line',
+                    style: { strokeWidth: 3, stroke: '#4da6ff' },
+                });
+
+                // Link "Topic" -> All Initial AI Modules (depth_level === 1)
+                rawNodes.forEach((n: any) => {
+                    if (n.depth_level === 1) {
+                        mappedEdges.push({
+                            id: `e-topic-${n.node_id}`,
+                            source: topicNodeId,
+                            target: n.node_id,
+                            type: 'straight',
+                            animated: false,
+                            className: 'animate-draw-line',
+                            style: { strokeWidth: 3, stroke: '#4da6ff' },
+                        });
+                    }
+                });
+
+                // Add DB edges (Level 2 dependencies)
+                if (rawEdges) {
+                    rawEdges.forEach((e: any) => {
+                        mappedEdges.push({
+                            id: `e-${e.source_node_id}-${e.target_node_id}`,
+                            source: e.source_node_id,
+                            target: e.target_node_id,
+                            type: 'straight',
+                            animated: false,
+                            className: 'animate-draw-line',
+                            style: { strokeWidth: 3, stroke: '#4da6ff' },
+                        });
+                    });
+                }
+
+                setDbNodes(mappedNodes);
+                setDbEdges(mappedEdges);
+            }
+
+            setLoadingDb(false);
+        };
+
+        fetchGraphData();
+    }, [user, isMockUser]);
+
+    const activeNodes = isMockUser ? mockInitialNodes : (dbNodes.length > 0 ? dbNodes : initialNodes);
+    const activeEdges = isMockUser ? mockInitialEdges : (dbNodes.length > 0 ? dbEdges : initialEdges);
+
+    const { nodes: layoutedNodes, edges: layoutedEdges, bounds } = useMemo(() => {
+        if (loadingDb) return { nodes: [], edges: [], bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 } };
+        return getLayoutedElements(activeNodes, activeEdges);
+    }, [activeNodes, activeEdges, loadingDb]);
 
     const [nodes, setNodes] = useState<Node[]>(layoutedNodes);
     const [edges, setEdges] = useState<Edge[]>(layoutedEdges);
@@ -153,6 +325,11 @@ export default function FlowGraph() {
         (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
         []
     );
+
+    useEffect(() => {
+        setNodes(layoutedNodes);
+        setEdges(layoutedEdges);
+    }, [layoutedNodes, layoutedEdges]);
 
     const router = useRouter();
 
@@ -179,7 +356,14 @@ export default function FlowGraph() {
         }
 
         if (data.status !== 'locked' && data.type !== 'user' && data.type !== 'category') {
-            router.push(`/skill/${clickedNode.id}`);
+            // If node has a topicSlug stored, route to parent topic page with highlight
+            // Otherwise route to the node itself (e.g. the Topic node)
+            const topicSlug = data.topicSlug as string | undefined;
+            if (topicSlug) {
+                router.push(`/skill/${topicSlug}?highlight=${clickedNode.id}`);
+            } else {
+                router.push(`/skill/${clickedNode.id}`);
+            }
         }
     }, [router]);
 

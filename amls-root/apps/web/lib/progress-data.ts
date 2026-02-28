@@ -13,10 +13,12 @@ export type ProgressNodeData = {
   percentage?: string;
   isCollapsible?: boolean;
   isCollapsed?: boolean;
+  topicSlug?: string;
 };
 
 // We assign a default position of { x: 0, y: 0 }, dagre will overwrite these
-export const initialNodes: Node<ProgressNodeData>[] = [
+// The fully populated tree is backed up here for the mock user
+export const mockInitialNodes: Node<ProgressNodeData>[] = [
   // --- ROOT (The User) ---
   {
     id: 'user',
@@ -232,7 +234,7 @@ const edgeStyle = (color: string) => ({
   style: { strokeWidth: 3, stroke: color },
 });
 
-export const initialEdges: Edge[] = [
+export const mockInitialEdges: Edge[] = [
   // User -> Category
   { id: 'e-user-category-tech', source: 'user', target: 'category-tech', ...edgeStyle('#4da6ff') },
 
@@ -284,3 +286,15 @@ export const initialEdges: Edge[] = [
   { id: 'e-comm-present', source: 'soft-comm', target: 'soft-present', ...edgeStyle('#f59e0b') },
   { id: 'e-agile-lead', source: 'soft-agile', target: 'soft-lead', ...edgeStyle('#f59e0b') },
 ];
+
+// The default empty tree for all normal users
+export const initialNodes: Node<ProgressNodeData>[] = [
+  {
+    id: 'user',
+    position: { x: 0, y: 0 },
+    data: { label: 'Me', icon: 'Crown', status: 'completed', type: 'user', color: '#ffeb3b' },
+    type: 'progressNode',
+  },
+];
+
+export const initialEdges: Edge[] = [];

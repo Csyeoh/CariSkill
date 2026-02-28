@@ -21,7 +21,18 @@ export default function ResumePage() {
     if (savedData) {
       setData(JSON.parse(savedData));
     } else {
-      setData(fallbackData); // Use static file if no upload happened
+      setData({
+        name: "",
+        title: "",
+        location: "",
+        email: "",
+        phone: "",
+        summary: "",
+        experience: [],
+        projects: [],
+        education: [],
+        skills: []
+      });
     }
   }, []);
 

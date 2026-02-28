@@ -12,7 +12,6 @@ export default function Sidebar() {
   const supabase = createClient();
 
   const [userName, setUserName] = useState('');
-  const [userField, setUserField] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
@@ -20,9 +19,7 @@ export default function Sidebar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const fullName = user.user_metadata?.full_name || 'Anonymous User';
-        const field = user.user_metadata?.field || '';
         setUserName(fullName);
-        setUserField(field);
 
         // Use ui-avatars as default if no avatar_url is provided
         const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=ffd700&color=000&size=150&bold=true`;
@@ -63,14 +60,6 @@ export default function Sidebar() {
           ) : (
             <div className="h-8 w-32 bg-gray-200 animate-pulse rounded-md" />
           )}
-
-          {userField && (
-            <p className="text-sm font-medium text-gray-500 mt-1 pb-2 border-b-2 border-[#FFD700] max-w-[80%] text-center">
-              {userField}
-            </p>
-          )}
-          {/* Provide a skeleton for the field if the name hasn't loaded yet to prevent jank */}
-          {!userName && <div className="h-4 w-24 bg-gray-200 animate-pulse rounded-md mt-2" />}
         </div>
       </div>
 
@@ -85,8 +74,8 @@ export default function Sidebar() {
                 key={item.name}
                 onClick={() => router.push(item.href)}
                 className={`flex items-center gap-4 px-8 py-4 text-left font-medium transition-colors ${isActive
-                    ? 'border-l-4 border-[#FFD700] text-gray-900 bg-yellow-50/50'
-                    : 'border-l-4 border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'border-l-4 border-[#FFD700] text-gray-900 bg-yellow-50/50'
+                  : 'border-l-4 border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
               >
                 <item.icon className="w-5 h-5" />

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { User, Settings, HelpCircle, LogOut, Bell } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -15,21 +15,49 @@ interface NavbarProps {
 export default function Navbar({ isLoggedIn }: NavbarProps) {
   const { user, isLoading: authLoading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isBellOpen, setIsBellOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unseenCount, setUnseenCount] = useState(0);
   const userFullName = user?.user_metadata?.full_name || 'Student';
   const userEmail = user?.email || '';
   const avatarUrl = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userFullName)}&background=FFD700&color=18181b&bold=true`;
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
 
-  // Close dropdown on click outside
+  // Fetch notifications
+  useEffect(() => {
+    if (!user) return;
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from('user_achievements')
+        .select('id, badge_id, earned_at, is_seen, badges(name, description, icon)')
+        .eq('user_id', user.id)
+        .order('earned_at', { ascending: false })
+        .limit(10);
+      if (data) {
+        setNotifications(data);
+        setUnseenCount(data.filter((n: any) => !n.is_seen).length);
+      }
+    };
+    fetchNotifications();
+  }, [user]);
+
+  const markAllSeen = async () => {
+    if (unseenCount === 0) return;
+    await supabase.from('user_achievements').update({ is_seen: true }).eq('user_id', user!.id).eq('is_seen', false);
+    setNotifications(prev => prev.map(n => ({ ...n, is_seen: true })));
+    setUnseenCount(0);
+  };
+
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false);
+      if (bellRef.current && !bellRef.current.contains(event.target as Node)) setIsBellOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -96,11 +124,44 @@ export default function Navbar({ isLoggedIn }: NavbarProps) {
             </>
           ) : (
             <>
-              <button className="text-gray-400 hover:text-yellow-500 transition-colors duration-300 hover:rotate-12">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
+              {/* Bell notification */}
+              <div className="relative" ref={bellRef}>
+                <button
+                  onClick={() => { setIsBellOpen(!isBellOpen); if (!isBellOpen) markAllSeen(); }}
+                  className="relative text-gray-400 hover:text-yellow-500 transition-colors duration-300 hover:rotate-12">
+                  <Bell className="w-6 h-6" />
+                  {unseenCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                      {unseenCount > 9 ? '9+' : unseenCount}
+                    </span>
+                  )}
+                </button>
+
+                {isBellOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-bold text-gray-900">Achievements</p>
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-sm text-gray-400">No achievements yet — keep learning! 🌱</div>
+                    ) : (
+                      <div className="max-h-72 overflow-y-auto">
+                        {notifications.map((n: any) => (
+                          <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_seen ? 'bg-yellow-50/50' : ''}`}>
+                            <span className="text-2xl leading-none mt-0.5">{n.badges?.icon || '🏅'}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{n.badges?.name}</p>
+                              <p className="text-xs text-gray-500 truncate">{n.badges?.description}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{new Date(n.earned_at).toLocaleDateString()}</p>
+                            </div>
+                            {!n.is_seen && <div className="w-2 h-2 bg-yellow-400 rounded-full mt-1.5 shrink-0" />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="relative" ref={dropdownRef}>
                 <button

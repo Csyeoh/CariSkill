@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 import json
 import sys
+import os
 import asyncio
+
+# Fix imports when running directly
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from crewai.flow.flow import Flow, start, listen, router, or_
 from crewai.flow.persistence import persist
 
@@ -31,15 +36,15 @@ class MasterFlow(Flow[SystemState]):
         
         import os
         debug_info = {
-            "pydantic_output": getattr(result, "pydantic", None) and getattr(result.pydantic, "model_dump", lambda: None)() if getattr(result, "pydantic", None) else None,
-            "json_dict_output": getattr(result, "json_dict", None),
-            "raw_output": getattr(result, "raw", None),
+            "pydantic_output": result.pydantic.model_dump() if hasattr(result, "pydantic") and result.pydantic else None,
+            "json_dict_output": result.json_dict if hasattr(result, "json_dict") else None,
+            "raw_output": result.raw if hasattr(result, "raw") else None,
             "tasks_output": [
                 {
-                    "raw": getattr(t, "raw", None),
-                    "json_dict": getattr(t, "json_dict", None),
-                    "pydantic": getattr(t, "pydantic", None) and getattr(t.pydantic, "model_dump", lambda: None)() if getattr(t, "pydantic", None) else None
-                } for t in getattr(result, "tasks_output", [])
+                    "raw": t.raw if hasattr(t, "raw") else None,
+                    "json_dict": t.json_dict if hasattr(t, "json_dict") else None,
+                    "pydantic": t.pydantic.model_dump() if hasattr(t, "pydantic") and t.pydantic else None
+                } for t in (result.tasks_output if hasattr(result, "tasks_output") else [])
             ]
         }
         

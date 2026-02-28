@@ -353,7 +353,7 @@ export default function SkillOverviewPage({ params }: { params: Promise<{ id: st
                     </div>
                   </div>
                   <button
-                    onClick={() => alert("The interactive learning module pages are still under construction!")}
+                    onClick={() => router.push(`/skill/${id}`)}
                     className="w-full bg-[#FFD700] hover:bg-[#E6C200] text-gray-900 font-bold text-lg py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group"
                   >
                     <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
